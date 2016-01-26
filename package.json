@@ -17,7 +17,7 @@
     "junit",
     "karma-plugin",
     "karma-reporter",
-	"sonarqube"
+    "sonarqube"
   ],
   "author": "Andras Tornai <tornai.andras.ede@gmail.com>",
   "dependencies": {
