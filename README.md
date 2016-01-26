@@ -1,0 +1,1 @@
+# karma-sonarqube-unit-reporter
