@@ -113,7 +113,7 @@ var SonarQubeUnitReporter = function (baseReporterDecorator, config, logger, hel
   }
   
   this.specSuccess = this.specSkipped = this.specFailure = function (browser, result) {
-	var nextPath = getClassName(browser, result).replace(new RegExp(/\\/, 'g'), '/');
+	var nextPath = getClassName(browser, result).replace(/\\/g, '/');
 	var fileNodes = suites[browser.id];
 	var lastFilePath;
 	
