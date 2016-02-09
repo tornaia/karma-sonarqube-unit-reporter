@@ -1,6 +1,6 @@
 {
   "name": "karma-sonarqube-unit-reporter",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "A Karma plugin. Report results in sonar-unit-tests xml format.",
   "main": "index.js",
   "files": [
@@ -40,5 +40,6 @@
     "load-grunt-tasks": "^3.2.0"
   },
   "contributors": [
+	"americoneto1 <americoneto1@gmail.com>"
   ]
 }
