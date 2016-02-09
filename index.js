@@ -1,5 +1,4 @@
 // set sonar.genericcoverage.unitTestReportPaths to reports/TEST-xunit.xml
-// TODO failure, error, skipped is NOT supported yet
 var os = require('os')
 var path = require('path')
 var fs = require('fs')
@@ -43,7 +42,7 @@ var SonarQubeUnitReporter = function (baseReporterDecorator, config, logger, hel
                                                        {pubID: null, sysID: null},
                                                        {allowSurrogateChars: false, skipNullAttributes: false, headless: true, ignoreDecorators: false, separateArrayItems: false, noDoubleEncoding: false, stringify: {}})
     unitTest.att('version', '1')
-	
+
   }
 
   var writeXmlForBrowser = function (browser) {
@@ -111,12 +110,12 @@ var SonarQubeUnitReporter = function (baseReporterDecorator, config, logger, hel
     suites = null
     allMessages.length = 0
   }
-  
+
   this.specSuccess = this.specSkipped = this.specFailure = function (browser, result) {
 	var nextPath = getClassName(browser, result).replace(/\\/g, '/');
 	var fileNodes = suites[browser.id];
 	var lastFilePath;
-	
+
 	var numberOfFileNodes = fileNodes.children.length;
 	if (numberOfFileNodes > 0) {
 	  lastFilePath = fileNodes.children[numberOfFileNodes-1].attributes.path.value;
@@ -131,10 +130,19 @@ var SonarQubeUnitReporter = function (baseReporterDecorator, config, logger, hel
 	  })
 	}
 	lastFilePath = nextPath;
-	
+
 	var appendToThisNode = suites[browser.id].children[suites[browser.id].children.length - 1];
-	
-	appendToThisNode.ele('testCase', {name: result.description, duration : (result.time || 0)});
+
+  var testCase = appendToThisNode.ele('testCase', {name: result.description, duration : (result.time || 0)});
+
+  if (result.skipped) {
+    testCase.ele('skipped', {message: 'Skipped'});
+  }
+
+  if (!result.success) {
+    testCase.ele('failure', {message: 'Error'}, formatError(result.log.join('\n\n')));
+  }
+
   }
 
   // wait for writing all the xml files, before exiting
