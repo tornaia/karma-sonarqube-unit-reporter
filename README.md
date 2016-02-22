@@ -1,6 +1,7 @@
 # karma-sonarqube-unit-reporter
 
 This solution is based on https://github.com/karma-runner/karma-junit-reporter .
+
 Issue: https://github.com/karma-runner/karma-junit-reporter/issues/81
 
 Right now this project is just a POC however I am actively using it.
