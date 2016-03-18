@@ -12,6 +12,8 @@ var SonarQubeUnitReporter = function (baseReporterDecorator, config, logger, hel
   var outputFile = reporterConfig.outputFile
   var useBrowserName = reporterConfig.useBrowserName
 
+  var transformName = reporterConfig.transformName || function(name){return name;}
+
   var suites
   var pendingFileWritings = 0
   var fileWritingFinished = function () {}
@@ -112,7 +114,11 @@ var SonarQubeUnitReporter = function (baseReporterDecorator, config, logger, hel
   }
 
   this.specSuccess = this.specSkipped = this.specFailure = function (browser, result) {
-	var nextPath = getClassName(browser, result).replace(/\\/g, '/');
+	var preMapped = nextPath = getClassName(browser, result).replace(/\\/g, '/');
+  nextPath = transformName(nextPath);
+  if( preMapped !== nextPath) log.debug('mapped test: ' + preMapped + ' -> ' + nextPath);
+
+
 	var fileNodes = suites[browser.id];
 	var lastFilePath;
 
