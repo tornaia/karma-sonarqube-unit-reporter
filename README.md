@@ -94,10 +94,11 @@ module.exports = function(config) {
     },
 
     reporters: ['progress', 'sonarqubeUnit', 'coverage'],
-	preprocessors:    {
-          'src/**/*.js':   ['coverage'],
-          'test/**/*.js':   ['coverage']
-	}
+    
+    preprocessors:    {
+      'src/**/*.js':   ['coverage'],
+      'test/**/*.js':   ['coverage']
+    }
   };
 
   config.set(configuration);
