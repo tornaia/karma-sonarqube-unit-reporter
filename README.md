@@ -73,6 +73,7 @@ module.exports = function(config) {
     },
 
     browsers: ['PhantomJS'],
+
     sonarQubeUnitReporter: {
       outputFile: 'reports/ut_report.xml',
       useBrowserName: false
