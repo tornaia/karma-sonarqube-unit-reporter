@@ -55,7 +55,7 @@ module.exports = function(config) {
 
     singleRun: true,
 	
-	colors:    false,
+    colors:    false,
 
     autoWatch: false,
 
@@ -72,33 +72,31 @@ module.exports = function(config) {
       whitelist: [path.join(conf.paths.src, '/**/!(*.html|*.spec|*.mock).js'), path.join(conf.paths.src_test, '/**/!(*.html|*.spec|*.mock).js')]
     },
 
-    browsers : ['PhantomJS'],
-	
-	sonarQubeUnitReporter: {
-		outputFile: 'reports/ut_report.xml',
-		useBrowserName: false
-	},
+    browsers: ['PhantomJS'],
+    sonarQubeUnitReporter: {
+      outputFile: 'reports/ut_report.xml',
+      useBrowserName: false
+    },
 
-    plugins : [
+    plugins: [
       'karma-phantomjs-launcher',
       'karma-angular-filesort',
       'karma-coverage',
       'karma-jasmine',
       'karma-ng-html2js-preprocessor',
-	  'karma-sonarqube-unit-reporter'
+      'karma-sonarqube-unit-reporter'
     ],
 
     coverageReporter: {
       type : 'lcov',
       dir : 'reports',
-	  subdir : 'coverage'
+      subdir : 'coverage'
     },
 
     reporters: ['progress', 'sonarqubeUnit', 'coverage'],
-	
 	preprocessors:    {
-            'src/**/*.js':   ['coverage'],
-			'test/**/*.js':   ['coverage']
+          'src/**/*.js':   ['coverage'],
+          'test/**/*.js':   ['coverage']
 	}
   };
 
