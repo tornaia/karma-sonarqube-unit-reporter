@@ -95,7 +95,7 @@ module.exports = function(config) {
 
     reporters: ['progress', 'sonarqubeUnit', 'coverage'],
     
-    preprocessors:    {
+    preprocessors: {
       'src/**/*.js':   ['coverage'],
       'test/**/*.js':   ['coverage']
     }
