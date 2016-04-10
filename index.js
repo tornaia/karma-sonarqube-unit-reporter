@@ -5,12 +5,15 @@ var fs = require('fs')
 var builder = require('xmlbuilder')
 
 var SonarQubeUnitReporter = function (baseReporterDecorator, config, logger, helper, formatError) {
+
   var log = logger.create('reporter.sonarqubeUnit')
   var reporterConfig = config.sonarQubeUnitReporter || {}
   var pkgName = reporterConfig.suite || ''
   var outputDir = reporterConfig.outputDir
   var outputFile = reporterConfig.outputFile
   var useBrowserName = reporterConfig.useBrowserName
+
+  var nameFormatter = reporterConfig.nameFormatter || null
 
   var suites
   var pendingFileWritings = 0
@@ -112,7 +115,17 @@ var SonarQubeUnitReporter = function (baseReporterDecorator, config, logger, hel
   }
 
   this.specSuccess = this.specSkipped = this.specFailure = function (browser, result) {
-	var nextPath = getClassName(browser, result).replace(/\\/g, '/');
+	var preMapped = getClassName(browser, result).replace(/\\/g, '/');
+  var nextPath = preMapped;
+  if(nameFormatter !== null){
+    nextPath = nameFormatter(nextPath);
+    if( preMapped !== nextPath) {
+      log.info('Transformed Test name \"' + preMapped + '\" -> \"' + nextPath + '\"');
+    } else {
+      log.warn('Name not transformed for test \"'+preMapped+'\"');
+    }
+  }
+
 	var fileNodes = suites[browser.id];
 	var lastFilePath;
 
