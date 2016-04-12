@@ -13,7 +13,8 @@ var SonarQubeUnitReporter = function (baseReporterDecorator, config, logger, hel
   var outputFile = reporterConfig.outputFile
   var useBrowserName = reporterConfig.useBrowserName
 
-  var nameFormatter = reporterConfig.nameFormatter || null
+  var filenameFormatter = reporterConfig.filenameFormatter || null
+  var testnameFormatter = reporterConfig.testnameFormatter || null
 
   var suites
   var pendingFileWritings = 0
@@ -117,12 +118,12 @@ var SonarQubeUnitReporter = function (baseReporterDecorator, config, logger, hel
   this.specSuccess = this.specSkipped = this.specFailure = function (browser, result) {
 	var preMapped = getClassName(browser, result).replace(/\\/g, '/');
   var nextPath = preMapped;
-  if(nameFormatter !== null){
-    nextPath = nameFormatter(nextPath);
+  if(filenameFormatter !== null){
+    nextPath = filenameFormatter(nextPath, result);
     if( preMapped !== nextPath) {
-      log.info('Transformed Test name \"' + preMapped + '\" -> \"' + nextPath + '\"');
+      log.info('Transformed File name \"' + preMapped + '\" -> \"' + nextPath + '\"');
     } else {
-      log.warn('Name not transformed for test \"'+preMapped+'\"');
+      log.warn('Name not transformed for File \"'+preMapped+'\"');
     }
   }
 
@@ -146,7 +147,20 @@ var SonarQubeUnitReporter = function (baseReporterDecorator, config, logger, hel
 
 	var appendToThisNode = suites[browser.id].children[suites[browser.id].children.length - 1];
 
-  var testCase = appendToThisNode.ele('testCase', {name: result.description, duration : (result.time || 0)});
+
+  var testname = result.description;
+  var testnameFormatted = testname;
+
+  if(testnameFormatter !== null){
+    testnameFormatted = testnameFormatter(testname, result);
+    if( testnameFormatted && testnameFormatted !== testname) {
+      log.info('Transformed test name \"' + testname + '\" -> \"' + testnameFormatted + '\"');
+    } else {
+      testnameFormatted = testname
+      log.warn('Name not transformed for test \"'+testnameFormatted+'\"');
+    }
+  }
+  var testCase = appendToThisNode.ele('testCase', {name: testnameFormatted, duration : (result.time || 0)});
 
   if (result.skipped) {
     testCase.ele('skipped', {message: 'Skipped'});
