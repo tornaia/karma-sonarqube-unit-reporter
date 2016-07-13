@@ -160,7 +160,7 @@ var SonarQubeUnitReporter = function (baseReporterDecorator, config, logger, hel
       log.warn('Name not transformed for test \"'+testnameFormatted+'\"');
     }
   }
-  var testCase = appendToThisNode.ele('testCase', {name: testnameFormatted, duration : (result.time || 0)});
+  var testCase = appendToThisNode.ele('testCase', {name: testnameFormatted, duration : (result.time || 1)});
 
   if (result.skipped) {
     testCase.ele('skipped', {message: 'Skipped'});
