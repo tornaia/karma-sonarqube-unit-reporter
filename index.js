@@ -121,9 +121,9 @@ var SonarQubeUnitReporter = function (baseReporterDecorator, config, logger, hel
   if(filenameFormatter !== null){
     nextPath = filenameFormatter(nextPath, result);
     if( preMapped !== nextPath) {
-      log.info('Transformed File name \"' + preMapped + '\" -> \"' + nextPath + '\"');
+      log.debug('Transformed File name \"' + preMapped + '\" -> \"' + nextPath + '\"');
     } else {
-      log.warn('Name not transformed for File \"'+preMapped+'\"');
+      log.debug('Name not transformed for File \"'+preMapped+'\"');
     }
   }
 
@@ -154,10 +154,10 @@ var SonarQubeUnitReporter = function (baseReporterDecorator, config, logger, hel
   if(testnameFormatter !== null){
     testnameFormatted = testnameFormatter(testname, result);
     if( testnameFormatted && testnameFormatted !== testname) {
-      log.info('Transformed test name \"' + testname + '\" -> \"' + testnameFormatted + '\"');
+      log.debug('Transformed test name \"' + testname + '\" -> \"' + testnameFormatted + '\"');
     } else {
       testnameFormatted = testname
-      log.warn('Name not transformed for test \"'+testnameFormatted+'\"');
+      log.debug('Name not transformed for test \"'+testnameFormatted+'\"');
     }
   }
   var testCase = appendToThisNode.ele('testCase', {name: testnameFormatted, duration : (result.time || 1)});
