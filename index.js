@@ -150,7 +150,7 @@ var SonarQubeUnitReporter = function (baseReporterDecorator, config, logger, hel
 
   function getDescription(result) {
       var desc = result.description;
-      for(var i = 1 ; i < result.suite.length; i++) {
+      for(var i = result.suite.length -1 ; i >= 0 ; i--) {
           desc = result.suite[i]+" "+desc;
       }
       return desc;
