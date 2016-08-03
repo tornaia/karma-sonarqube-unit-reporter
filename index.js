@@ -148,7 +148,15 @@ var SonarQubeUnitReporter = function (baseReporterDecorator, config, logger, hel
 	var appendToThisNode = suites[browser.id].children[suites[browser.id].children.length - 1];
 
 
-  var testname = result.description;
+  function getDescription(result) {
+      var desc = result.description;
+      for(var i = result.suite.length -1 ; i >= 0 ; i--) {
+          desc = result.suite[i]+" "+desc;
+      }
+      return desc;
+  }
+
+  var testname = getDescription(result);
   var testnameFormatted = testname;
 
   if(testnameFormatter !== null){
