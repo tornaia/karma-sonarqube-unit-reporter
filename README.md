@@ -61,7 +61,7 @@ module.exports = function(config) {
 
     ngHtml2JsPreprocessor: {
       stripPrefix: conf.paths.src + '/',
-      moduleName: 'hr2AngularUi'
+      moduleName: 'TODO_HERE_YOUR_MODULE_NAME'
     },
 
     logLevel: 'WARN',
