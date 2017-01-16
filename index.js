@@ -86,7 +86,7 @@ var SonarQubeUnitReporter = function (baseReporterDecorator, config, logger, hel
   var getClassName = function (browser, result) {
     var browserName = browser.name.replace(/ /g, '_').replace(/\./g, '_') + '.'
 
-    return (useBrowserName ? browserName : '') + (pkgName ? pkgName + '.' : '') + result.suite[0]
+    return (useBrowserName ? browserName : '') + (pkgName ? pkgName + '/' : '') + result.suite[0];
   }
 
   this.onRunStart = function (browsers) {
