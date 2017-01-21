@@ -86,7 +86,7 @@ var SonarQubeUnitReporter = function (baseReporterDecorator, config, logger, hel
   var getClassName = function (browser, result) {
     var browserName = browser.name.replace(/ /g, '_').replace(/\./g, '_') + '.'
 
-    return (useBrowserName ? browserName : '') + (pkgName ? pkgName + '.' : '') + result.suite[0]
+    return (useBrowserName ? browserName : '') + (pkgName ? pkgName + '/' : '') + result.suite[0];
   }
 
   this.onRunStart = function (browsers) {
@@ -116,69 +116,69 @@ var SonarQubeUnitReporter = function (baseReporterDecorator, config, logger, hel
   }
 
   this.specSuccess = this.specSkipped = this.specFailure = function (browser, result) {
-	var preMapped = getClassName(browser, result).replace(/\\/g, '/');
-  var nextPath = preMapped;
-  if(filenameFormatter !== null){
-    nextPath = filenameFormatter(nextPath, result);
-    if( preMapped !== nextPath) {
-      log.debug('Transformed File name \"' + preMapped + '\" -> \"' + nextPath + '\"');
-    } else {
-      log.debug('Name not transformed for File \"'+preMapped+'\"');
-    }
-  }
-
-	var fileNodes = suites[browser.id];
-	var lastFilePath;
-
-	var numberOfFileNodes = fileNodes.children.length;
-	if (numberOfFileNodes > 0) {
-	  lastFilePath = fileNodes.children[numberOfFileNodes-1].attributes.path.value;
-	  if (lastFilePath !== nextPath) {
-	    suites[browser.id].ele('file', {
-		  path: nextPath
-	    })
-	  }
-	} else {
-	  suites[browser.id].ele('file', {
-        path: nextPath
-	  })
-	}
-	lastFilePath = nextPath;
-
-	var appendToThisNode = suites[browser.id].children[suites[browser.id].children.length - 1];
-
-
-  function getDescription(result) {
-      var desc = result.description;
-      for(var i = result.suite.length -1 ; i >= 0 ; i--) {
-          desc = result.suite[i]+" "+desc;
+  	var preMapped = getClassName(browser, result).replace(/\\/g, '/');
+    var nextPath = preMapped;
+    if(filenameFormatter !== null){
+      nextPath = filenameFormatter(nextPath, result);
+      if( preMapped !== nextPath) {
+        log.debug('Transformed File name \"' + preMapped + '\" -> \"' + nextPath + '\"');
+      } else {
+        log.debug('Name not transformed for File \"'+preMapped+'\"');
       }
-      return desc;
-  }
-
-  var testname = getDescription(result);
-  var testnameFormatted = testname;
-
-  if(testnameFormatter !== null){
-    testnameFormatted = testnameFormatter(testname, result);
-    if( testnameFormatted && testnameFormatted !== testname) {
-      log.debug('Transformed test name \"' + testname + '\" -> \"' + testnameFormatted + '\"');
-    } else {
-      testnameFormatted = testname
-      log.debug('Name not transformed for test \"'+testnameFormatted+'\"');
     }
-  }
-  var testCase = appendToThisNode.ele('testCase', {name: testnameFormatted, duration : (result.time || 1)});
 
-  if (result.skipped) {
-    testCase.ele('skipped', {message: 'Skipped'});
-  }
+  	var fileNodes = suites[browser.id];
+  	var lastFilePath;
 
-  if (!result.success) {
-    testCase.ele('failure', {message: 'Error'}, formatError(result.log.join('\n\n')));
-  }
+  	var numberOfFileNodes = fileNodes.children.length;
+  	if (numberOfFileNodes > 0) {
+  	  lastFilePath = fileNodes.children[numberOfFileNodes-1].attributes.path.value;
+  	  if (lastFilePath !== nextPath) {
+  	    suites[browser.id].ele('file', {
+  		  path: nextPath
+  	    })
+  	  }
+  	} else {
+  	  suites[browser.id].ele('file', {
+          path: nextPath
+  	  })
+  	}
+  	lastFilePath = nextPath;
 
-  }
+  	var appendToThisNode = suites[browser.id].children[suites[browser.id].children.length - 1];
+
+
+    function getDescription(result) {
+        var desc = result.description;
+        for(var i = result.suite.length -1 ; i >= 0 ; i--) {
+            desc = result.suite[i]+" "+desc;
+        }
+        return desc;
+    }
+
+    var testname = getDescription(result);
+    var testnameFormatted = testname;
+
+    if(testnameFormatter !== null){
+      testnameFormatted = testnameFormatter(testname, result);
+      if( testnameFormatted && testnameFormatted !== testname) {
+        log.debug('Transformed test name \"' + testname + '\" -> \"' + testnameFormatted + '\"');
+      } else {
+        testnameFormatted = testname
+        log.debug('Name not transformed for test \"'+testnameFormatted+'\"');
+      }
+    }
+    var testCase = appendToThisNode.ele('testCase', {name: testnameFormatted, duration : (result.time || 1)});
+
+    if (result.skipped) {
+      testCase.ele('skipped', {message: 'Skipped'});
+    }
+
+    if (!result.success) {
+      testCase.ele('failure', {message: 'Error'}, formatError(result.log.join('\n\n')));
+    }
+
+}
 
   // wait for writing all the xml files, before exiting
   this.onExit = function (done) {
