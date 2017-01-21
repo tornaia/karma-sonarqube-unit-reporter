@@ -1,4 +1,3 @@
-// set sonar.genericcoverage.unitTestReportPaths to reports/TEST-xunit.xml
 var os = require('os')
 var path = require('path')
 var fs = require('fs')
@@ -41,11 +40,11 @@ var SonarQubeUnitReporter = function (baseReporterDecorator, config, logger, hel
 
   var initliazeXmlForBrowser = function (browser) {
     var timestamp = (new Date()).toISOString().substr(0, 19)
-    var unitTest = suites[browser.id] = builder.create('unitTest',
+    var testExecutions = suites[browser.id] = builder.create('testExecutions',
                                                        {version: '1.0', encoding: 'UTF-8', standalone: true},
                                                        {pubID: null, sysID: null},
                                                        {allowSurrogateChars: false, skipNullAttributes: false, headless: true, ignoreDecorators: false, separateArrayItems: false, noDoubleEncoding: false, stringify: {}})
-    unitTest.att('version', '1')
+    testExecutions.att('version', '1')
 
   }
 
