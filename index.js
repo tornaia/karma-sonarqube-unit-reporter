@@ -39,7 +39,6 @@ var SonarQubeUnitReporter = function (baseReporterDecorator, config, logger, hel
   ]
 
   var initliazeXmlForBrowser = function (browser) {
-    var timestamp = (new Date()).toISOString().substr(0, 19)
     var testExecutions = suites[browser.id] = builder.create('testExecutions',
                                                        {version: '1.0', encoding: 'UTF-8', standalone: true},
                                                        {pubID: null, sysID: null},
