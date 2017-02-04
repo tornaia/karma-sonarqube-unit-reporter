@@ -7,6 +7,7 @@ var SonarQubeUnitReporter = function (baseReporterDecorator, config, logger, hel
 
   var log = logger.create('reporter.sonarqubeUnit')
   var reporterConfig = config.sonarQubeUnitReporter || {}
+  var sonarQubeVersion = reporterConfig.sonarQubeVersion || 'LATEST'
   var pkgName = reporterConfig.suite || ''
   var outputDir = reporterConfig.outputDir
   var outputFile = reporterConfig.outputFile
@@ -39,12 +40,20 @@ var SonarQubeUnitReporter = function (baseReporterDecorator, config, logger, hel
   ]
 
   var initliazeXmlForBrowser = function (browser) {
-    var testExecutions = suites[browser.id] = builder.create('testExecutions',
+    var tagName;
+    switch (sonarQubeVersion) {
+      case '5.x':
+        tagName = 'unitTest'; break;
+      default:
+        tagName = 'testExecutions';
+    }
+
+    var parentTag = suites[browser.id] = builder.create(tagName,
                                                        {version: '1.0', encoding: 'UTF-8', standalone: true},
                                                        {pubID: null, sysID: null},
                                                        {allowSurrogateChars: false, skipNullAttributes: false, headless: true, ignoreDecorators: false, separateArrayItems: false, noDoubleEncoding: false, stringify: {}})
-    testExecutions.att('version', '1')
 
+    parentTag.att('version', '1')
   }
 
   var writeXmlForBrowser = function (browser) {
