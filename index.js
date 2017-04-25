@@ -1,11 +1,9 @@
-var os = require('os')
 var path = require('path')
 var fs = require('fs')
 var builder = require('xmlbuilder')
-var fileUtil = require('./fileUtil.js');
+var fileUtil = require('./fileUtil.js')
 
 var SonarQubeUnitReporter = function (baseReporterDecorator, config, logger, helper, formatError) {
-
   var log = logger.create('reporter.sonarqubeUnit')
   var reporterConfig = config.sonarQubeUnitReporter || {}
   var sonarQubeVersion = reporterConfig.sonarQubeVersion || 'LATEST'
@@ -27,7 +25,7 @@ var SonarQubeUnitReporter = function (baseReporterDecorator, config, logger, hel
   }
 
   outputDir = helper.normalizeWinPath(path.resolve(config.basePath, outputDir)) + path.sep
-  
+
   if (typeof useBrowserName === 'undefined') {
     useBrowserName = true
   }
@@ -41,12 +39,12 @@ var SonarQubeUnitReporter = function (baseReporterDecorator, config, logger, hel
   ]
 
   var initliazeXmlForBrowser = function (browser) {
-    var tagName;
+    var tagName
     switch (sonarQubeVersion) {
       case '5.x':
-        tagName = 'unitTest'; break;
+        tagName = 'unitTest'; break
       default:
-        tagName = 'testExecutions';
+        tagName = 'testExecutions'
     }
 
     var parentTag = suites[browser.id] = builder.create(tagName,
@@ -94,7 +92,7 @@ var SonarQubeUnitReporter = function (baseReporterDecorator, config, logger, hel
   var getClassName = function (browser, result) {
     var browserName = browser.name.replace(/ /g, '_').replace(/\./g, '_') + '.'
 
-    return (useBrowserName ? browserName : '') + (pkgName ? pkgName + '/' : '') + result.suite[0];
+    return (useBrowserName ? browserName : '') + (pkgName ? pkgName + '/' : '') + result.suite[0]
   }
 
   this.onRunStart = function (browsers) {
@@ -124,74 +122,69 @@ var SonarQubeUnitReporter = function (baseReporterDecorator, config, logger, hel
   }
 
   this.specSuccess = this.specSkipped = this.specFailure = function (browser, result) {
-  	var preMapped = getClassName(browser, result).replace(/\\/g, '/');
-	console.log("pre mapped class name: " + preMapped);
-	console.log("filenameformatter: " + filenameFormatter);
-    var nextPath = preMapped;
-    if(filenameFormatter !== null){
-		str = JSON.stringify(nextPath);
-		str = JSON.stringify(nextPath, null, 4); // (Optional) beautiful indented output.
-		console.log("asdasdasd: " + str);
-      nextPath = filenameFormatter(nextPath, result);
-      if( preMapped !== nextPath) {
-        log.debug('Transformed File name \"' + preMapped + '\" -> \"' + nextPath + '\"');
+    var preMapped = getClassName(browser, result).replace(/\\/g, '/')
+    console.log('pre mapped class name: ' + preMapped)
+    console.log('filenameformatter: ' + filenameFormatter)
+    var nextPath = preMapped
+    if (filenameFormatter !== null) {
+      nextPath = filenameFormatter(nextPath, result)
+      if (preMapped !== nextPath) {
+        log.debug('Transformed File name \"' + preMapped + '\" -> \"' + nextPath + '\"')
       } else {
-        log.debug('Name not transformed for File \"'+preMapped+'\"');
+        log.debug('Name not transformed for File \"' + preMapped + '\"')
       }
     }
-	
-  	var fileNodes = suites[browser.id];
-  	var lastFilePath;
-	
-  	var numberOfFileNodes = fileNodes.children.length;
-  	if (numberOfFileNodes > 0) {
-  	  lastFilePath = fileNodes.children[numberOfFileNodes-1].attributes.path.value;
-  	  if (lastFilePath !== nextPath) {
-  	    suites[browser.id].ele('file', {
-  		  path: nextPath
-  	    })
-  	  }
-  	} else {
-  	  suites[browser.id].ele('file', {
+
+    var fileNodes = suites[browser.id]
+    var lastFilePath
+
+    var numberOfFileNodes = fileNodes.children.length
+    if (numberOfFileNodes > 0) {
+      lastFilePath = fileNodes.children[numberOfFileNodes - 1].attributes.path.value
+      if (lastFilePath !== nextPath) {
+        suites[browser.id].ele('file', {
           path: nextPath
-  	  })
-  	}
-  	lastFilePath = nextPath;
+        })
+      }
+    } else {
+      suites[browser.id].ele('file', {
+        path: nextPath
+      })
+    }
+    lastFilePath = nextPath
 
-  	var appendToThisNode = suites[browser.id].children[suites[browser.id].children.length - 1];
+    var appendToThisNode = suites[browser.id].children[suites[browser.id].children.length - 1]
 
-
-    function getDescription(result) {
-        var desc = result.description;
-        for(var i = result.suite.length -1 ; i >= 0 ; i--) {
-            desc = result.suite[i]+" "+desc;
-        }
-        return desc;
+    function getDescription (result) {
+      var desc = result.description
+      for (var i = result.suite.length - 1; i >= 0; i--) {
+        desc = result.suite[i] + ' ' + desc
+      }
+      return desc
     }
 
-    var testname = getDescription(result);
-    var testnameFormatted = testname;
+    var testname = getDescription(result)
+    var testnameFormatted = testname
 
-    if(testnameFormatter !== null){
-      testnameFormatted = testnameFormatter(testname, result);
-      if( testnameFormatted && testnameFormatted !== testname) {
-        log.debug('Transformed test name \"' + testname + '\" -> \"' + testnameFormatted + '\"');
+    if (testnameFormatter !== null) {
+      testnameFormatted = testnameFormatter(testname, result)
+      if (testnameFormatted && testnameFormatted !== testname) {
+        log.debug('Transformed test name \"' + testname + '\" -> \"' + testnameFormatted + '\"')
       } else {
         testnameFormatted = testname
-        log.debug('Name not transformed for test \"'+testnameFormatted+'\"');
+        log.debug('Name not transformed for test \"' + testnameFormatted + '\"')
       }
     }
-    var testCase = appendToThisNode.ele('testCase', {name: testnameFormatted, duration : (result.time || 1)});
+    var testCase = appendToThisNode.ele('testCase', {name: testnameFormatted, duration: (result.time || 1)})
 
     if (result.skipped) {
-      testCase.ele('skipped', {message: 'Skipped'});
+      testCase.ele('skipped', {message: 'Skipped'})
     }
 
     if (!result.success) {
-      testCase.ele('failure', {message: 'Error'}, formatError(result.log.join('\n\n')));
+      testCase.ele('failure', {message: 'Error'}, formatError(result.log.join('\n\n')))
     }
-
-}
+  }
 
   // wait for writing all the xml files, before exiting
   this.onExit = function (done) {
@@ -203,11 +196,11 @@ var SonarQubeUnitReporter = function (baseReporterDecorator, config, logger, hel
   }
 }
 
-function defaultFilenameFormatter(nextPath, result){
-	//TODO ezt kiemeleni
-	var filesForDescriptions = fileUtil.getFilesForDescriptions('./src','.spec.ts');
-	console.log("value: " + filesForDescriptions[nextPath]);
-	return filesForDescriptions[nextPath];
+function defaultFilenameFormatter (nextPath, result) {
+  // TODO ezt kiemeleni
+  var filesForDescriptions = fileUtil.getFilesForDescriptions('./src', '.spec.ts')
+  console.log('value: ' + filesForDescriptions[nextPath])
+  return filesForDescriptions[nextPath]
 }
 
 SonarQubeUnitReporter.$inject = ['baseReporterDecorator', 'config', 'logger', 'helper', 'formatError']

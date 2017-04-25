@@ -43,7 +43,7 @@ module.exports = function (grunt) {
     eslint: {
       target: [
         'index.js',
-		'fileUtil.js',
+        'fileUtil.js',
         'gruntfile.js'
       ]
     }
