@@ -2,6 +2,7 @@ var os = require('os')
 var path = require('path')
 var fs = require('fs')
 var builder = require('xmlbuilder')
+var fileUtil = require('./fileUtil.js');
 
 var SonarQubeUnitReporter = function (baseReporterDecorator, config, logger, helper, formatError) {
 
@@ -13,7 +14,7 @@ var SonarQubeUnitReporter = function (baseReporterDecorator, config, logger, hel
   var outputFile = reporterConfig.outputFile
   var useBrowserName = reporterConfig.useBrowserName
 
-  var filenameFormatter = reporterConfig.filenameFormatter || null
+  var filenameFormatter = reporterConfig.filenameFormatter || defaultFilenameFormatter
   var testnameFormatter = reporterConfig.testnameFormatter || null
 
   var suites
@@ -26,7 +27,7 @@ var SonarQubeUnitReporter = function (baseReporterDecorator, config, logger, hel
   }
 
   outputDir = helper.normalizeWinPath(path.resolve(config.basePath, outputDir)) + path.sep
-
+  
   if (typeof useBrowserName === 'undefined') {
     useBrowserName = true
   }
@@ -124,8 +125,13 @@ var SonarQubeUnitReporter = function (baseReporterDecorator, config, logger, hel
 
   this.specSuccess = this.specSkipped = this.specFailure = function (browser, result) {
   	var preMapped = getClassName(browser, result).replace(/\\/g, '/');
+	console.log("pre mapped class name: " + preMapped);
+	console.log("filenameformatter: " + filenameFormatter);
     var nextPath = preMapped;
     if(filenameFormatter !== null){
+		str = JSON.stringify(nextPath);
+		str = JSON.stringify(nextPath, null, 4); // (Optional) beautiful indented output.
+		console.log("asdasdasd: " + str);
       nextPath = filenameFormatter(nextPath, result);
       if( preMapped !== nextPath) {
         log.debug('Transformed File name \"' + preMapped + '\" -> \"' + nextPath + '\"');
@@ -133,10 +139,10 @@ var SonarQubeUnitReporter = function (baseReporterDecorator, config, logger, hel
         log.debug('Name not transformed for File \"'+preMapped+'\"');
       }
     }
-
+	
   	var fileNodes = suites[browser.id];
   	var lastFilePath;
-
+	
   	var numberOfFileNodes = fileNodes.children.length;
   	if (numberOfFileNodes > 0) {
   	  lastFilePath = fileNodes.children[numberOfFileNodes-1].attributes.path.value;
@@ -195,6 +201,13 @@ var SonarQubeUnitReporter = function (baseReporterDecorator, config, logger, hel
       done()
     }
   }
+}
+
+function defaultFilenameFormatter(nextPath, result){
+	//TODO ezt kiemeleni
+	var filesForDescriptions = fileUtil.getFilesForDescriptions('./src','.spec.ts');
+	console.log("value: " + filesForDescriptions[nextPath]);
+	return filesForDescriptions[nextPath];
 }
 
 SonarQubeUnitReporter.$inject = ['baseReporterDecorator', 'config', 'logger', 'helper', 'formatError']

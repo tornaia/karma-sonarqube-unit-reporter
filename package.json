@@ -4,7 +4,8 @@
   "description": "A Karma plugin. Report results in sonar-unit-tests xml format.",
   "main": "index.js",
   "files": [
-    "index.js"
+    "index.js",
+	"fileUtil.js"
   ],
   "scripts": {
     "test": "grunt"
