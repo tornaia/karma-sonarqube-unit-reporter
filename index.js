@@ -12,7 +12,7 @@ var SonarQubeUnitReporter = function (baseReporterDecorator, config, logger, hel
   var outputFile = reporterConfig.outputFile
   var useBrowserName = reporterConfig.useBrowserName
 
-  var filenameFormatter = reporterConfig.filenameFormatter || defaultFilenameFormatter
+  var filenameFormatter = reporterConfig.filenameFormatter || null
   var testnameFormatter = reporterConfig.testnameFormatter || null
 
   var suites
@@ -194,12 +194,17 @@ var SonarQubeUnitReporter = function (baseReporterDecorator, config, logger, hel
   }
 
   // look for jasmine test files in the specified path
+  var overrideTestDescription = reporterConfig.overrideTestDescription || false
   var testPath = reporterConfig.testPath || './'
   var testFilePattern = reporterConfig.testFilePattern || '(.spec.ts|.spec.js)'
   var filesForDescriptions = fileUtil.getFilesForDescriptions(testPath, testFilePattern)
 
   function defaultFilenameFormatter (nextPath, result) {
     return filesForDescriptions[nextPath]
+  }
+
+  if (overrideTestDescription) {
+    filenameFormatter = defaultFilenameFormatter
   }
 }
 
