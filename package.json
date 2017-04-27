@@ -5,7 +5,8 @@
   "main": "index.js",
   "files": [
     "index.js",
-	"fileUtil.js"
+    "src/file-util.js",
+    "test/file-util.spec.js"
   ],
   "scripts": {
     "test": "grunt"
@@ -37,7 +38,14 @@
     "grunt-conventional-changelog": "^4.1.0",
     "grunt-conventional-github-releaser": "^0.4.0",
     "grunt-eslint": "^17.1.0",
+    "grunt-karma": "2.0.0",
     "grunt-npm": "^0.0.2",
-    "load-grunt-tasks": "^3.2.0"
+    "jasmine": "2.5.2",
+    "jasmine-core": "2.5.2",
+    "eslint-plugin-jasmine": "2.2.0",
+    "karma-jasmine": "1.1.0",
+    "karma-phantomjs-launcher": "1.0.4",
+    "load-grunt-tasks": "^3.2.0",
+    "phantomjs": "2.1.7"
   }
 }

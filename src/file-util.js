@@ -47,7 +47,7 @@ function findFilesInDir (startPath, filter) {
     var stat = fs.lstatSync(filename)
     if (stat.isDirectory()) {
       results = results.concat(findFilesInDir(filename, filter))
-    } else if (filename.indexOf(filter) >= 0) {
+    } else if (filename.search(filter) >= 0) {
       console.log('-- found: ', filename)
       results.push(filename)
     }

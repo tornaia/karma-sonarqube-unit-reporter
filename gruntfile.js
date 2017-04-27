@@ -43,15 +43,26 @@ module.exports = function (grunt) {
     eslint: {
       target: [
         'index.js',
-        'fileUtil.js',
+        'src/file-util.js',
+        'test/file-util.spec.js',
         'gruntfile.js'
       ]
+    },
+    karma: {
+      unit: {
+        options: {
+          files: ['test/file-util.spec.js'],
+          singleRun: true,
+          browsers: ['PhantomJS'],
+          frameworks: ['jasmine']
+        }
+      }
     }
   })
 
   require('load-grunt-tasks')(grunt)
 
-  grunt.registerTask('default', ['eslint'])
+  grunt.registerTask('default', ['eslint', 'karma:unit'])
 
   grunt.registerTask('release', 'Bump the version and publish to NPM.', function (type) {
     grunt.task.run([

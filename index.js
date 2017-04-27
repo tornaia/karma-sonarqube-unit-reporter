@@ -1,7 +1,7 @@
 var path = require('path')
 var fs = require('fs')
 var builder = require('xmlbuilder')
-var fileUtil = require('./fileUtil.js')
+var fileUtil = require('./src/file-util.js')
 
 var SonarQubeUnitReporter = function (baseReporterDecorator, config, logger, helper, formatError) {
   var log = logger.create('reporter.sonarqubeUnit')
@@ -123,8 +123,6 @@ var SonarQubeUnitReporter = function (baseReporterDecorator, config, logger, hel
 
   this.specSuccess = this.specSkipped = this.specFailure = function (browser, result) {
     var preMapped = getClassName(browser, result).replace(/\\/g, '/')
-    console.log('pre mapped class name: ' + preMapped)
-    console.log('filenameformatter: ' + filenameFormatter)
     var nextPath = preMapped
     if (filenameFormatter !== null) {
       nextPath = filenameFormatter(nextPath, result)
@@ -194,13 +192,15 @@ var SonarQubeUnitReporter = function (baseReporterDecorator, config, logger, hel
       done()
     }
   }
-}
 
-function defaultFilenameFormatter (nextPath, result) {
-  // TODO ezt kiemeleni
-  var filesForDescriptions = fileUtil.getFilesForDescriptions('./src', '.spec.ts')
-  console.log('value: ' + filesForDescriptions[nextPath])
-  return filesForDescriptions[nextPath]
+  // look for jasmine test files in the specified path
+  var testPath = reporterConfig.testPath || './'
+  var testFilePattern = reporterConfig.testFilePattern || '(.spec.ts|.spec.js)'
+  var filesForDescriptions = fileUtil.getFilesForDescriptions(testPath, testFilePattern)
+
+  function defaultFilenameFormatter (nextPath, result) {
+    return filesForDescriptions[nextPath]
+  }
 }
 
 SonarQubeUnitReporter.$inject = ['baseReporterDecorator', 'config', 'logger', 'helper', 'formatError']
