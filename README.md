@@ -75,9 +75,7 @@ module.exports = function(config) {
     sonarQubeUnitReporter: {
       sonarQubeVersion: 'LATEST',
       outputFile: 'reports/ut_report.xml',
-      overrideTestDescription: true,
-      testPath: './test',
-      testNamePattern: '.spec.js'
+      useBrowserName: false
     },
 
     plugins: [
@@ -110,7 +108,11 @@ module.exports = function(config) {
 By default, the description of the jasmine tests used as the path attribute in the generated xml. If this is not the case with your tests, you can use the following options to automagically find the right path values.
 
 ```
-overrideTestDescription: true,
-testPath: './spec', // path to your spec files
-testNamePattern: '.spec.ts' // regexp pattern to your spec files 
+sonarQubeUnitReporter: {
+      sonarQubeVersion: 'LATEST',
+      outputFile: 'reports/ut_report.xml',
+      overrideTestDescription: true,
+      testPath: './test',
+      testNamePattern: '.spec.js'
+},
 ```
