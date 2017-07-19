@@ -43,14 +43,23 @@ module.exports = function (grunt) {
     eslint: {
       target: [
         'index.js',
+        'src/file-util.js',
+        'test/spec/file-util.spec.js',
         'gruntfile.js'
       ]
+    },
+    jasmine_nodejs: {
+      unit: {
+        specs: [
+          'test/spec/**/*.spec.js'
+        ]
+      }
     }
   })
 
   require('load-grunt-tasks')(grunt)
 
-  grunt.registerTask('default', ['eslint'])
+  grunt.registerTask('default', ['eslint', 'jasmine_nodejs'])
 
   grunt.registerTask('release', 'Bump the version and publish to NPM.', function (type) {
     grunt.task.run([

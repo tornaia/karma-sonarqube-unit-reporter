@@ -104,3 +104,11 @@ module.exports = function(config) {
   config.set(configuration);
 };
 ```
+
+By default, the description of the jasmine tests used as the path attribute in the generated xml. If this is not the case with your tests, you can use the following options to automagically find the right path values.
+
+```
+overrideTestDescription: true,
+testPath: './spec', // path to your spec files
+testNamePattern: '.spec.ts' // regexp pattern to your spec files 
+```
