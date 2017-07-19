@@ -105,7 +105,7 @@ module.exports = function(config) {
 };
 ```
 
-By default, the description of the jasmine tests used as the path attribute in the generated xml. If this is not the case with your tests, you can use the following options to automagically find the right path values.
+By default, the description of the jasmine tests used as the path attribute in the generated xml. If this is not the case with your tests, you can use the following options to automagically find the right path values. It is the recommended way to use this plugin but to be backward compatible it is not enabled by default.
 
 ```
 sonarQubeUnitReporter: {
