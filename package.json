@@ -19,7 +19,9 @@
     "junit",
     "karma-plugin",
     "karma-reporter",
-    "sonarqube"
+    "sonarqube",
+    "sonar",
+    "sonar-generic-coverage"
   ],
   "author": "Andras Tornai <tornai.andras.ede@gmail.com>",
   "dependencies": {
