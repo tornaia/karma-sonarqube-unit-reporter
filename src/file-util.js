@@ -21,7 +21,7 @@ function getFilesForDescriptions (startPath, filter) {
           var descriptionEnd = fileText.indexOf(delimeter, position + 10) + 1
           var describe = fileText.substring(position + 10, descriptionEnd - 1)
           describe = describe.replace(/\\\\/g, '/')
-          item = item.replace(/\\\\/g, '/')
+          item = item.replace(/\\\\/g, '/').replace(/\\/g, '/')
           ret[describe] = item
           position = 0
           fileText = fileText.substring(descriptionEnd)
