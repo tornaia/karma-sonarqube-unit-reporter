@@ -5,10 +5,13 @@ module.exports = {
   getFilesForDescriptions: getFilesForDescriptions
 }
 
-function getFilesForDescriptions (startPath, filter) {
+function getFilesForDescriptions (startPaths, filter) {
   var ret = {}
-  var files = findFilesInDir(startPath, filter)
-  files.forEach(findDescriptionInFile)
+
+  startPaths.forEach(function (startPathItem) {
+    var files = findFilesInDir(startPathItem, filter)
+    files.forEach(findDescriptionInFile)
+  })
 
   function findDescriptionInFile (item, index) {
     try {

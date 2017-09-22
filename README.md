@@ -6,7 +6,6 @@ Issue: https://github.com/karma-runner/karma-junit-reporter/issues/81
 
 Motivation
 http://docs.sonarqube.org/display/PLUG/Generic+Test+Coverage
-http://docs.sonarqube.org/display/PLUG/JavaScript+Unit+Tests+Execution+Reports+Import
 
 Available on npmjs.org
 https://www.npmjs.com/package/karma-sonarqube-unit-reporter
@@ -112,7 +111,7 @@ sonarQubeUnitReporter: {
       sonarQubeVersion: 'LATEST',
       outputFile: 'reports/ut_report.xml',
       overrideTestDescription: true,
-      testPath: './test',
+      testPaths: ['./test', './moreTests'],
       testFilePattern: '.spec.js',
       useBrowserName: false
 },
