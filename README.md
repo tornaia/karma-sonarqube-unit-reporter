@@ -113,6 +113,7 @@ sonarQubeUnitReporter: {
       outputFile: 'reports/ut_report.xml',
       overrideTestDescription: true,
       testPath: './test',
-      testFilePattern: '.spec.js'
+      testFilePattern: '.spec.js',
+      useBrowserName: false
 },
 ```
