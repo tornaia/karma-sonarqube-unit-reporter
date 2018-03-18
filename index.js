@@ -196,8 +196,9 @@ var SonarQubeUnitReporter = function (baseReporterDecorator, config, logger, hel
   // look for jasmine test files in the specified path
   var overrideTestDescription = reporterConfig.overrideTestDescription || false
   var testPath = reporterConfig.testPath || './'
+  var testPaths = reporterConfig.testPaths || [testPath]
   var testFilePattern = reporterConfig.testFilePattern || '(.spec.ts|.spec.js)'
-  var filesForDescriptions = fileUtil.getFilesForDescriptions(testPath, testFilePattern)
+  var filesForDescriptions = fileUtil.getFilesForDescriptions(testPaths, testFilePattern)
 
   function defaultFilenameFormatter (nextPath, result) {
     return filesForDescriptions[nextPath]
