@@ -4,9 +4,6 @@ This solution is based on https://github.com/karma-runner/karma-junit-reporter .
 
 Issue: https://github.com/karma-runner/karma-junit-reporter/issues/81
 
-Motivation
-http://docs.sonarqube.org/display/PLUG/Generic+Test+Coverage
-
 Available on npmjs.org
 https://www.npmjs.com/package/karma-sonarqube-unit-reporter
 
