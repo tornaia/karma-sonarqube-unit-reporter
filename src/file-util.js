@@ -17,12 +17,13 @@ function getFilesForDescriptions (startPaths, filter) {
     try {
       var fileText = fs.readFileSync(item, 'utf8')
       var position = 0
+      let length = 0;
       while (position !== -1) {
-        position = fileText.indexOf('describe(')
+        [position, length] = getPostion(fileText);
         if (position !== -1) {
-          var delimeter = fileText[position + 9]
-          var descriptionEnd = fileText.indexOf(delimeter, position + 10) + 1
-          var describe = fileText.substring(position + 10, descriptionEnd - 1)
+          var delimeter = fileText[position + length]
+          var descriptionEnd = fileText.indexOf(delimeter, position + length + 1) + 1
+          var describe = fileText.substring(position + length + 1, descriptionEnd - 1)
           describe = describe.replace(/\\\\/g, '/')
           item = item.replace(/\\\\/g, '/').replace(/\\/g, '/')
           ret[describe] = item
@@ -58,4 +59,19 @@ function findFilesInDir (startPath, filter) {
     }
   }
   return results
+}
+
+function getPostion(fileText) {
+  const testList = [
+    /describe.?\w* *\(/,
+    /suite.?\w* *\(/
+  ];
+  for (let i = 0; i < testList.length; i++) {
+    const regex = new RegExp(testList[i]);
+    const match = regex.exec(fileText);
+    if(match) {
+      return [match.index, match[0].length];
+    }
+  }
+  return [-1, 0];
 }
