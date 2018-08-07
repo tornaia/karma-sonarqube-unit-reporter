@@ -52,7 +52,7 @@ function findFilesInDir (startPath, filter) {
     var filename = path.join(startPath, files[i])
     var stat = fs.lstatSync(filename)
     if (stat.isDirectory()) {
-      if (filename != "node_modules") {
+      if (filename !== 'node_modules') {
         results = results.concat(findFilesInDir(filename, filter))
       }
     } else if (filename.endsWith(filter)) {
