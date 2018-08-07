@@ -53,7 +53,7 @@ function findFilesInDir (startPath, filter) {
     var stat = fs.lstatSync(filename)
     if (stat.isDirectory()) {
       if (filename != "node_modules") {
-	results = results.concat(findFilesInDir(filename, filter))
+        results = results.concat(findFilesInDir(filename, filter))
       }
     } else if (filename.endsWith(filter)) {
       results.push(filename)
