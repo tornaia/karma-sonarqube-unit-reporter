@@ -113,3 +113,9 @@ sonarQubeUnitReporter: {
       useBrowserName: false
 },
 ```
+
+##### How to build
+
+* NodeJS 8.0.0 https://nodejs.org/download/release/v8.0.0/
+* npm install
+* npm build
