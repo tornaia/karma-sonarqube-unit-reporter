@@ -9,12 +9,18 @@ Clear feedback. Just if you appreciate my efforts!
 
 [![](https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=3V7ZGPEGL55VS)
 
+##### Motivation
+
 This solution is based on https://github.com/karma-runner/karma-junit-reporter .
 
 Issue: https://github.com/karma-runner/karma-junit-reporter/issues/81
 
+##### How to get
+
 Available on npmjs.org
 https://www.npmjs.com/package/karma-sonarqube-unit-reporter
+
+##### How to use
 
 Sample karma.conf.ci.js
 ```xml
