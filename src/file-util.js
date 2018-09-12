@@ -1,42 +1,55 @@
 var path = require('path')
 var fs = require('fs')
+var glob = require('glob')
 
 module.exports = {
-  getFilesForDescriptions: getFilesForDescriptions
+  getFilesForDescriptions: getFilesForDescriptions,
+  globFilesForDescriptions: globFilesForDescriptions
 }
 
 function getFilesForDescriptions (startPaths, filter) {
-  var ret = {}
+  var result = {}
 
   startPaths.forEach(function (startPathItem) {
-    var files = findFilesInDir(startPathItem, filter)
-    files.forEach(findDescriptionInFile)
+    findFilesInDir(startPathItem, filter).forEach(function (file) {
+      insertDescriptionsForFile(result, file, '')
+    })
   })
 
-  function findDescriptionInFile (item, index) {
-    try {
-      var fileText = fs.readFileSync(item, 'utf8')
-      var position = 0
-      while (position !== -1) {
-        position = fileText.indexOf('describe(')
-        if (position !== -1) {
-          var delimeter = fileText[position + 9]
-          var descriptionEnd = fileText.indexOf(delimeter, position + 10) + 1
-          var describe = fileText.substring(position + 10, descriptionEnd - 1)
-          describe = describe.replace(/\\\\/g, '/')
-          item = item.replace(/\\\\/g, '/').replace(/\\/g, '/')
-          ret[describe] = item
-          position = 0
-          fileText = fileText.substring(descriptionEnd)
-        }
-        console.log('-- describe: ' + describe + ' -> file: ' + item)
-      }
-    } catch (e) {
-      console.log('Error:', e.stack)
-    }
-  }
+  return result
+}
 
-  return ret
+function globFilesForDescriptions (filesGlob, basePath) {
+  var result = {}
+
+  glob.sync(path.join(basePath, filesGlob)).forEach(function (file) {
+    insertDescriptionsForFile(result, file, basePath)
+  })
+
+  return result
+}
+
+function insertDescriptionsForFile (descriptions, file, basePath) {
+  try {
+    var fileText = fs.readFileSync(file, 'utf8')
+    var position = 0
+    file = path.relative(basePath, file)
+    while (position !== -1) {
+      position = fileText.indexOf('describe(')
+      if (position !== -1) {
+        var delimeter = fileText[position + 9]
+        var descriptionEnd = fileText.indexOf(delimeter, position + 10) + 1
+        var describe = fileText.substring(position + 10, descriptionEnd - 1)
+        describe = describe.replace(/\\\\/g, '/')
+        descriptions[describe] = file.replace(/\\\\/g, '/').replace(/\\/g, '/')
+        position = 0
+        fileText = fileText.substring(descriptionEnd)
+      }
+      console.log('-- describe: ' + describe + ' -> file: ' + file)
+    }
+  } catch (e) {
+    console.log('Error:', e.stack)
+  }
 }
 
 function findFilesInDir (startPath, filter) {
