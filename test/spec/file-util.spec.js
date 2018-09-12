@@ -52,4 +52,23 @@ describe('create description - file name map from test sources', function () {
     }
     expect(filesForDescriptions).toEqual(expected)
   })
+
+  it('globs many files', function () {
+    var filesForDescriptions = fileUtil.globFilesForDescriptions('multiple_files_*/*.spec.js', 'test/resources')
+    var expectedPaths = [
+      'multiple_files_one_description/first_test.spec.js',
+      'multiple_files_one_description/second_test.spec.js',
+      'multiple_files_multiple_descriptions/first_test.spec.js',
+      'multiple_files_multiple_descriptions/second_test.spec.js'
+    ]
+    var expected = {
+      'first test description': expectedPaths[0],
+      'second test description': expectedPaths[1],
+      'first test first description': expectedPaths[2],
+      'first test second description': expectedPaths[2],
+      'second test first description': expectedPaths[3],
+      'second test second description': expectedPaths[3]
+    }
+    expect(filesForDescriptions).toEqual(expected)
+  })
 })
