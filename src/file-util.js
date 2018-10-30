@@ -19,10 +19,17 @@ function getFilesForDescriptions (startPaths, filter) {
       var position = 0
       while (position !== -1) {
         position = fileText.indexOf('describe(')
+        console.log('position: ' + position);
         if (position !== -1) {
-          var delimeter = fileText[position + 9]
-          var descriptionEnd = fileText.indexOf(delimeter, position + 10) + 1
-          var describe = fileText.substring(position + 10, descriptionEnd - 1)
+          var delimeter = ' ';
+          var len_to_delimeter = 8;
+          while (delimeter === ' ') {
+            len_to_delimeter += 1;
+            delimeter = fileText[position + len_to_delimeter]
+          }
+          console.log('delimeter: ' + delimeter);
+          var descriptionEnd = fileText.indexOf(delimeter, position + len_to_delimeter + 1) + 1
+          var describe = fileText.substring(position + len_to_delimeter + 1, descriptionEnd - 1)
           describe = describe.replace(/\\\\/g, '/')
           item = item.replace(/\\\\/g, '/').replace(/\\/g, '/')
           ret[describe] = item
