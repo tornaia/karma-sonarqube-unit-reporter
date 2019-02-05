@@ -59,7 +59,7 @@ function findFilesInDir (startPath, filter) {
       if (Array.isArray(filter)) {
         filter.forEach((f) => {
           if (filename.endsWith(f)) {
-            results.push(f)
+            results.push(filename)
           }
         })
       } else if (filename.endsWith(filter)) {
