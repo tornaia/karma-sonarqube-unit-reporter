@@ -25,7 +25,7 @@
   ],
   "author": "Andras Tornai <tornai.andras.ede@gmail.com>",
   "dependencies": {
-    "xmlbuilder": "3.1.0"
+    "xmlbuilder": "4.2.1"
   },
   "peerDependencies": {
     "karma": ">=0.9"
