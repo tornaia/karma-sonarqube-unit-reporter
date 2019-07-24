@@ -3,13 +3,7 @@ var fs = require('fs')
 var builder = require('xmlbuilder')
 var fileUtil = require('./src/file-util.js')
 
-var SonarQubeUnitReporter = function(
-  baseReporterDecorator,
-  config,
-  logger,
-  helper,
-  formatError
-) {
+var SonarQubeUnitReporter = function(baseReporterDecorator, config, logger, helper, formatError) {
   var log = logger.create('reporter.sonarqubeUnit')
   var reporterConfig = config.sonarQubeUnitReporter || {}
   var sonarQubeVersion = reporterConfig.sonarQubeVersion || 'LATEST'
@@ -30,8 +24,7 @@ var SonarQubeUnitReporter = function(
     outputDir = '.'
   }
 
-  outputDir =
-    helper.normalizeWinPath(path.resolve(config.basePath, outputDir)) + path.sep
+  outputDir = helper.normalizeWinPath(path.resolve(config.basePath, outputDir)) + path.sep
 
   if (typeof useBrowserName === 'undefined') {
     useBrowserName = true
@@ -78,15 +71,10 @@ var SonarQubeUnitReporter = function(
     var newOutputFile
 
     if (outputFile != null) {
-      var dir = useBrowserName
-        ? path.join(outputDir, safeBrowserName)
-        : outputDir
+      var dir = useBrowserName ? path.join(outputDir, safeBrowserName) : outputDir
       newOutputFile = path.join(dir, outputFile)
     } else if (useBrowserName) {
-      newOutputFile = path.join(
-        outputDir,
-        'ut_report-' + safeBrowserName + '.xml'
-      )
+      newOutputFile = path.join(outputDir, 'ut_report-' + safeBrowserName + '.xml')
     } else {
       newOutputFile = path.join(outputDir, 'ut_report.xml')
     }
@@ -98,9 +86,7 @@ var SonarQubeUnitReporter = function(
 
     pendingFileWritings++
     helper.mkdirIfNotExists(path.dirname(newOutputFile), function() {
-      fs.writeFile(newOutputFile, xmlToOutput.end({ pretty: true }), function(
-        err
-      ) {
+      fs.writeFile(newOutputFile, xmlToOutput.end({ pretty: true }), function(err) {
         if (err) {
           log.warn('Cannot write JUnit xml\n\t' + err.message)
         } else {
@@ -117,11 +103,7 @@ var SonarQubeUnitReporter = function(
   var getClassName = function(browser, result) {
     var browserName = browser.name.replace(/ /g, '_').replace(/\./g, '_') + '.'
 
-    return (
-      (useBrowserName ? browserName : '') +
-      (pkgName ? pkgName + '/' : '') +
-      result.suite[0]
-    )
+    return (useBrowserName ? browserName : '') + (pkgName ? pkgName + '/' : '') + result.suite[0]
   }
 
   this.onRunStart = function(browsers) {
@@ -150,18 +132,13 @@ var SonarQubeUnitReporter = function(
     allMessages.length = 0
   }
 
-  this.specSuccess = this.specSkipped = this.specFailure = function(
-    browser,
-    result
-  ) {
+  this.specSuccess = this.specSkipped = this.specFailure = function(browser, result) {
     var preMapped = getClassName(browser, result).replace(/\\/g, '/')
     var nextPath = preMapped
     if (filenameFormatter !== null) {
       nextPath = filenameFormatter(nextPath, result)
       if (preMapped !== nextPath) {
-        log.debug(
-          'Transformed File name "' + preMapped + '" -> "' + nextPath + '"'
-        )
+        log.debug('Transformed File name "' + preMapped + '" -> "' + nextPath + '"')
       } else {
         log.debug('Name not transformed for File "' + preMapped + '"')
       }
@@ -172,8 +149,7 @@ var SonarQubeUnitReporter = function(
 
     var numberOfFileNodes = fileNodes.children.length
     if (numberOfFileNodes > 0) {
-      lastFilePath =
-        fileNodes.children[numberOfFileNodes - 1].attributes.path.value
+      lastFilePath = fileNodes.children[numberOfFileNodes - 1].attributes.getNamedItem('path').value
       if (lastFilePath !== nextPath) {
         suites[browser.id].ele('file', {
           path: nextPath,
@@ -186,8 +162,7 @@ var SonarQubeUnitReporter = function(
     }
     lastFilePath = nextPath
 
-    var appendToThisNode =
-      suites[browser.id].children[suites[browser.id].children.length - 1]
+    var appendToThisNode = suites[browser.id].children[suites[browser.id].children.length - 1]
 
     function getDescription(result) {
       var desc = result.description
@@ -203,13 +178,7 @@ var SonarQubeUnitReporter = function(
     if (testnameFormatter !== null) {
       testnameFormatted = testnameFormatter(testname, result)
       if (testnameFormatted && testnameFormatted !== testname) {
-        log.debug(
-          'Transformed test name "' +
-            testname +
-            '" -> "' +
-            testnameFormatted +
-            '"'
-        )
+        log.debug('Transformed test name "' + testname + '" -> "' + testnameFormatted + '"')
       } else {
         testnameFormatted = testname
         log.debug('Name not transformed for test "' + testnameFormatted + '"')
@@ -225,11 +194,7 @@ var SonarQubeUnitReporter = function(
     }
 
     if (!result.success) {
-      testCase.ele(
-        'failure',
-        { message: 'Error' },
-        formatError(result.log.join('\n\n'))
-      )
+      testCase.ele('failure', { message: 'Error' }, formatError(result.log.join('\n\n')))
     }
   }
 
@@ -247,10 +212,7 @@ var SonarQubeUnitReporter = function(
   var testPath = reporterConfig.testPath || './'
   var testPaths = reporterConfig.testPaths || [testPath]
   var testFilePattern = reporterConfig.testFilePattern || '(.spec.ts|.spec.js)'
-  var filesForDescriptions = fileUtil.getFilesForDescriptions(
-    testPaths,
-    testFilePattern
-  )
+  var filesForDescriptions = fileUtil.getFilesForDescriptions(testPaths, testFilePattern)
 
   function defaultFilenameFormatter(nextPath, result) {
     return filesForDescriptions[nextPath]
@@ -261,13 +223,7 @@ var SonarQubeUnitReporter = function(
   }
 }
 
-SonarQubeUnitReporter.$inject = [
-  'baseReporterDecorator',
-  'config',
-  'logger',
-  'helper',
-  'formatError',
-]
+SonarQubeUnitReporter.$inject = ['baseReporterDecorator', 'config', 'logger', 'helper', 'formatError']
 
 // PUBLISH DI MODULE
 module.exports = {
