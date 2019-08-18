@@ -1,7 +1,11 @@
 {
-  "extends": "standard", "plugin:jasmine/recommended",
+  "extends": "standard",
   "plugins": ["jasmine"],
   "env": {
     "jasmine": true
+  },
+  "rules": {
+    "space-before-function-paren": "off",
+    "comma-dangle": "off"
   }
 }
