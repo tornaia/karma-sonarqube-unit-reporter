@@ -60,9 +60,18 @@ function findFilesInDir (startPath, filter) {
       if (filename !== 'node_modules') {
         results = results.concat(findFilesInDir(filename, filter))
       }
-    } else if (filename.endsWith(filter)) {
-      results.push(filename)
+    } else {
+      if (Array.isArray(filter)) {
+        filter.forEach((f) => {
+          if (filename.endsWith(f)) {
+            results.push(filename)
+          }
+        })
+      } else if (filename.endsWith(filter)) {
+        results.push(filename)
+      }
     }
   }
   return results
 }
+
