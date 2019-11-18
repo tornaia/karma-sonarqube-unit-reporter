@@ -62,7 +62,7 @@ module.exports = function(config) {
     files: listFiles(),
 
     singleRun: true,
-	
+
     colors:    false,
 
     autoWatch: false,
@@ -85,7 +85,8 @@ module.exports = function(config) {
     sonarQubeUnitReporter: {
       sonarQubeVersion: 'LATEST',
       outputFile: 'reports/ut_report.xml',
-      useBrowserName: false
+      useBrowserName: false,
+      silent: false
     },
 
     plugins: [
@@ -104,7 +105,7 @@ module.exports = function(config) {
     },
 
     reporters: ['progress', 'sonarqubeUnit', 'coverage'],
-    
+
     preprocessors: {
       'src/**/*.js':   ['coverage'],
       'test/**/*.js':   ['coverage']
@@ -124,7 +125,8 @@ sonarQubeUnitReporter: {
       overrideTestDescription: true,
       testPaths: ['./test', './moreTests'],
       testFilePattern: '.spec.js',
-      useBrowserName: false
+      useBrowserName: false,
+      silent: false
 },
 ```
 

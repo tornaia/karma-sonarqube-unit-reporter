@@ -11,6 +11,7 @@ var SonarQubeUnitReporter = function(baseReporterDecorator, config, logger, help
   var outputDir = reporterConfig.outputDir
   var outputFile = reporterConfig.outputFile
   var useBrowserName = reporterConfig.useBrowserName
+  var silentMode = reporterConfig.silent;
 
   var filenameFormatter = reporterConfig.filenameFormatter || null
   var testnameFormatter = reporterConfig.testnameFormatter || null
@@ -212,7 +213,7 @@ var SonarQubeUnitReporter = function(baseReporterDecorator, config, logger, help
   var testPath = reporterConfig.testPath || './'
   var testPaths = reporterConfig.testPaths || [testPath]
   var testFilePattern = reporterConfig.testFilePattern || '(.spec.ts|.spec.js)'
-  var filesForDescriptions = fileUtil.getFilesForDescriptions(testPaths, testFilePattern)
+  var filesForDescriptions = fileUtil.getFilesForDescriptions(testPaths, testFilePattern, silentMode)
 
   function defaultFilenameFormatter(nextPath, result) {
     return filesForDescriptions[nextPath]
