@@ -212,7 +212,7 @@ var SonarQubeUnitReporter = function(baseReporterDecorator, config, logger, help
   var testPath = reporterConfig.testPath || './'
   var testPaths = reporterConfig.testPaths || [testPath]
   var testFilePattern = reporterConfig.testFilePattern || '(.spec.ts|.spec.js)'
-  var filesForDescriptions = fileUtil.getFilesForDescriptions(testPaths, testFilePattern)
+  var filesForDescriptions = fileUtil.getFilesForDescriptions(testPaths, testFilePattern, log)
 
   function defaultFilenameFormatter(nextPath, result) {
     return filesForDescriptions[nextPath]

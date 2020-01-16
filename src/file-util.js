@@ -5,11 +5,11 @@ module.exports = {
   getFilesForDescriptions: getFilesForDescriptions
 }
 
-function getFilesForDescriptions (startPaths, filter) {
+function getFilesForDescriptions (startPaths, filter, log) {
   var ret = {}
 
   startPaths.forEach(function (startPathItem) {
-    var files = findFilesInDir(startPathItem, filter)
+    var files = findFilesInDir(startPathItem, filter, log)
     files.forEach(findDescriptionInFile)
   })
 
@@ -34,21 +34,21 @@ function getFilesForDescriptions (startPaths, filter) {
           position = 0
           fileText = fileText.substring(descriptionEnd)
         }
-        console.log('-- describe: ' + describe + ' -> file: ' + item)
+        log.debug('-- describe: ' + describe + ' -> file: ' + item)
       }
     } catch (e) {
-      console.log('Error:', e.stack)
+      log.error('Error:', e.stack)
     }
   }
 
   return ret
 }
 
-function findFilesInDir (startPath, filter) {
+function findFilesInDir (startPath, filter, log) {
   var results = []
 
   if (!fs.existsSync(startPath)) {
-    console.log('Source directory not found. ', startPath)
+    log.error('Source directory not found. ', startPath)
     return
   }
 
@@ -58,7 +58,7 @@ function findFilesInDir (startPath, filter) {
     var stat = fs.lstatSync(filename)
     if (stat.isDirectory()) {
       if (filename !== 'node_modules') {
-        results = results.concat(findFilesInDir(filename, filter))
+        results = results.concat(findFilesInDir(filename, filter, log))
       }
     } else if (filename.endsWith(filter)) {
       results.push(filename)
