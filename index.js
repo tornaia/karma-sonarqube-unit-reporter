@@ -195,7 +195,7 @@ var SonarQubeUnitReporter = function(baseReporterDecorator, config, logger, help
     }
 
     if (!result.success) {
-      testCase.ele('failure', { message: 'Error' }, formatError(logTestUtil.stripInvalidXmlCharacters(result.log.join('\n\n'))))
+      testCase.ele('failure', { message: 'Error' }, formatError(logTextUtil.stripInvalidXmlCharacters(result.log.join('\n\n'))))
     }
   }
 
