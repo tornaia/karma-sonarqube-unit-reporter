@@ -20,6 +20,15 @@ describe('create description - file name map from test sources', function() {
     expect(filesForDescriptions).toEqual(expected)
   })
 
+  it('one test file, one description, default filter regexp', function() {
+    var filesForDescriptions = fileUtil.getFilesForDescriptions(
+      ['test/resources/one_file_one_description'],
+      /(\.spec\.ts|\.spec.js)/
+    )
+    var expected = { 'test description': 'test/resources/one_file_one_description/test.spec.js' }
+    expect(filesForDescriptions).toEqual(expected)
+  })
+
   it('one test file, one description, wildcard', function() {
     var filesForDescriptions = fileUtil.getFilesForDescriptions(
       ['test'],

@@ -46,16 +46,21 @@ function getFilesForDescriptions (startPaths, filter) {
 
 function findFilesInDir (startPath, filter) {
   var results = []
-  var fileFilter = filter
-    // Replace \ or / with [\\/]
-    .replace(/[\\/]/g, '[\\\\/]')
-    // Replace . with \. for regex
-    .replace(/\./g, '\\.')
-    // Replace single * with any char except path seperator
-    .replace(/(?<!\*)\*(?!\*)/g, '[^\\\\/]*')
-    // Replace double * with anychar
-    .replace(/\*\*/g, '.*') + '$'
-  var fileFilterRegex = new RegExp(fileFilter)
+  var fileFilterRegex
+  if (filter instanceof RegExp) {
+    fileFilterRegex = filter
+  } else {
+    var fileFilter = filter
+      // Replace \ or / with [\\/]
+      .replace(/[\\/]/g, '[\\\\/]')
+      // Replace . with \. for regex
+      .replace(/\./g, '\\.')
+      // Replace single * with any char except path seperator
+      .replace(/(?<!\*)\*(?!\*)/g, '[^\\\\/]*')
+      // Replace double * with anychar
+      .replace(/\*\*/g, '.*') + '$'
+    fileFilterRegex = new RegExp(fileFilter)
+  }
 
   if (!fs.existsSync(startPath)) {
     console.log('Source directory not found. ', startPath)
