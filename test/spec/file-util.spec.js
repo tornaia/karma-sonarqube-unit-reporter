@@ -23,7 +23,7 @@ describe('create description - file name map from test sources', function() {
   it('one test file, one description, wildcard', function() {
     var filesForDescriptions = fileUtil.getFilesForDescriptions(
       ['test'],
-      'one_file_one*/*.spec.*'
+      'test/resources/one_file_one*/*.spec.*'
     )
     var expectedPath = 'test/resources/one_file_one_description/test.spec.js'
     var expected = { 'test description': expectedPath }
@@ -33,7 +33,7 @@ describe('create description - file name map from test sources', function() {
   it('one test file, one description, double wildcard', function() {
     var filesForDescriptions = fileUtil.getFilesForDescriptions(
       ['test'],
-      '**resources/one_file_one*/*.spec.js'
+      'test/**one_file_one*/*.spec.js'
     )
     var expected = { 'test description': 'test/resources/one_file_one_description/test.spec.js' }
     expect(filesForDescriptions).toEqual(expected)
