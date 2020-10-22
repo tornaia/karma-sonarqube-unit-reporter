@@ -34,7 +34,6 @@ function getFilesForDescriptions (startPaths, filter) {
           position = 0
           fileText = fileText.substring(descriptionEnd)
         }
-        console.log('-- describe: ' + describe + ' -> file: ' + item)
       }
     } catch (e) {
       console.log('Error:', e.stack)
