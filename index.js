@@ -211,6 +211,7 @@ var SonarQubeUnitReporter = function(baseReporterDecorator, config, logger, help
 
   // look for jasmine test files in the specified path
   var overrideTestDescription = reporterConfig.overrideTestDescription || false
+  var addFilenameFormatter = reporterConfig.addFilenameFormatter || false
   var testPath = reporterConfig.testPath || './'
   var testPaths = reporterConfig.testPaths || [testPath]
   var testFilePattern = reporterConfig.testFilePattern || /(\.spec\.ts|\.spec.js)/
@@ -224,9 +225,17 @@ var SonarQubeUnitReporter = function(baseReporterDecorator, config, logger, help
       return filesForDescriptions[nextPath]
     }
   }
-
+  
   if (overrideTestDescription) {
-    filenameFormatter = defaultFilenameFormatter
+    var currentFormatter = filenameFormatter
+    if (addFilenameFormatter && filenameFormatter !== null) {
+      if (addFilenameFormatter === 'append') {
+        filenameFormatter = (nextPath, result) => currentFormatter(defaultFilenameFormatter(nextPath, result), result)
+      }
+      // extend here for other options (such as 'prepend')
+    } else {
+      filenameFormatter = defaultFilenameFormatter
+    }
   }
 }
 
