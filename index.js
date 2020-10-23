@@ -2,6 +2,7 @@ var path = require('path')
 var fs = require('fs')
 var builder = require('xmlbuilder')
 var fileUtil = require('./src/file-util.js')
+var logTextUtil = require('./src/log-text-util.js')
 
 var SonarQubeUnitReporter = function(baseReporterDecorator, config, logger, helper, formatError) {
   var log = logger.create('reporter.sonarqubeUnit')
@@ -196,7 +197,7 @@ var SonarQubeUnitReporter = function(baseReporterDecorator, config, logger, help
     }
 
     if (!result.success) {
-      testCase.ele('failure', { message: 'Error' }, formatError(result.log.join('\n\n')))
+      testCase.ele('failure', { message: 'Error' }, formatError(logTextUtil.stripInvalidXmlCharacters(result.log.join('\n\n'))))
     }
   }
 
