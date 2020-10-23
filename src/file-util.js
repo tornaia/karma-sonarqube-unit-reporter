@@ -21,13 +21,13 @@ function getFilesForDescriptions (startPaths, filter) {
         position = fileText.indexOf('describe(')
         if (position !== -1) {
           var delimeter = ' '
-          var len_to_delimeter = 8
+          var lenToDelimeter = 8
           while (delimeter === ' ') {
-            len_to_delimeter += 1
-            delimeter = fileText[position + len_to_delimeter]
+            lenToDelimeter += 1
+            delimeter = fileText[position + lenToDelimeter]
           }
-          var descriptionEnd = fileText.indexOf(delimeter, position + len_to_delimeter + 1) + 1
-          var describe = fileText.substring(position + len_to_delimeter + 1, descriptionEnd - 1)
+          var descriptionEnd = fileText.indexOf(delimeter, position + lenToDelimeter + 1) + 1
+          var describe = fileText.substring(position + lenToDelimeter + 1, descriptionEnd - 1)
           describe = describe.replace(/\\\\/g, '/')
           item = item.replace(/\\\\/g, '/').replace(/\\/g, '/')
           ret[describe] = item
