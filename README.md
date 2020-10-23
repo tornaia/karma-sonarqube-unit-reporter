@@ -136,3 +136,12 @@ sonarQubeUnitReporter: {
 
 * npm install
 * npm build
+
+##### Additional Arguments
+
+```
+sonarQubeUnitReporter: {
+  prependTestFileName: 'frontend' # This adds a string to the front of the generated file name in the report
+                                  # Useful if you run tests from within a subdirectory
+}
+```

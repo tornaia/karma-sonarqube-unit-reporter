@@ -214,10 +214,15 @@ var SonarQubeUnitReporter = function(baseReporterDecorator, config, logger, help
   var testPath = reporterConfig.testPath || './'
   var testPaths = reporterConfig.testPaths || [testPath]
   var testFilePattern = reporterConfig.testFilePattern || /(\.spec\.ts|\.spec.js)/
+  var prependTestFileName = reporterConfig.prependTestFileName || ''
   var filesForDescriptions = fileUtil.getFilesForDescriptions(testPaths, testFilePattern)
 
   function defaultFilenameFormatter(nextPath, result) {
-    return filesForDescriptions[nextPath]
+    if (prependTestFileName !== '') {
+      return prependTestFileName + '/' + filesForDescriptions[nextPath]
+    } else {
+      return filesForDescriptions[nextPath]
+    }
   }
 
   if (overrideTestDescription) {
