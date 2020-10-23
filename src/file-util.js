@@ -21,13 +21,13 @@ function getFilesForDescriptions (startPaths, filter) {
         position = fileText.indexOf('describe(')
         if (position !== -1) {
           var delimeter = ' '
-          var lenToDelimeter = 8
+          var lenToDelimiter = 8
           while (delimeter === ' ') {
-            lenToDelimeter += 1
-            delimeter = fileText[position + lenToDelimeter]
+            lenToDelimiter += 1
+            delimeter = fileText[position + lenToDelimiter]
           }
-          var descriptionEnd = fileText.indexOf(delimeter, position + lenToDelimeter + 1) + 1
-          var describe = fileText.substring(position + lenToDelimeter + 1, descriptionEnd - 1)
+          var descriptionEnd = fileText.indexOf(delimeter, position + lenToDelimiter + 1) + 1
+          var describe = fileText.substring(position + lenToDelimiter + 1, descriptionEnd - 1)
           describe = describe.replace(/\\\\/g, '/')
           item = item.replace(/\\\\/g, '/').replace(/\\/g, '/')
           ret[describe] = item
@@ -45,6 +45,21 @@ function getFilesForDescriptions (startPaths, filter) {
 
 function findFilesInDir (startPath, filter) {
   var results = []
+  var fileFilterRegex
+  if (filter instanceof RegExp) {
+    fileFilterRegex = filter
+  } else {
+    var fileFilter = filter
+      // Replace \ or / with [\\/]
+      .replace(/[\\/]/g, '[\\\\/]')
+      // Replace . with \. for regex
+      .replace(/\./g, '\\.')
+      // Replace single * with any char except path seperator
+      .replace(/(?<!\*)\*(?!\*)/g, '[^\\\\/]*')
+      // Replace double * with anychar
+      .replace(/\*\*/g, '.*') + '$'
+    fileFilterRegex = new RegExp(fileFilter)
+  }
 
   if (!fs.existsSync(startPath)) {
     console.log('Source directory not found. ', startPath)
@@ -59,7 +74,7 @@ function findFilesInDir (startPath, filter) {
       if (filename !== 'node_modules') {
         results = results.concat(findFilesInDir(filename, filter))
       }
-    } else if (filename.endsWith(filter)) {
+    } else if (fileFilterRegex.test(filename)) {
       results.push(filename)
     }
   }

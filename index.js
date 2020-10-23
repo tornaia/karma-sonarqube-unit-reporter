@@ -137,7 +137,9 @@ var SonarQubeUnitReporter = function(baseReporterDecorator, config, logger, help
     var nextPath = preMapped
     if (filenameFormatter !== null) {
       nextPath = filenameFormatter(nextPath, result)
-      if (preMapped !== nextPath) {
+      if (!nextPath) {
+        log.warn('No filename found for description: ' + nextPath)
+      } else if (preMapped !== nextPath) {
         log.debug('Transformed File name "' + preMapped + '" -> "' + nextPath + '"')
       } else {
         log.debug('Name not transformed for File "' + preMapped + '"')
@@ -211,8 +213,8 @@ var SonarQubeUnitReporter = function(baseReporterDecorator, config, logger, help
   var overrideTestDescription = reporterConfig.overrideTestDescription || false
   var testPath = reporterConfig.testPath || './'
   var testPaths = reporterConfig.testPaths || [testPath]
+  var testFilePattern = reporterConfig.testFilePattern || /(\.spec\.ts|\.spec.js)/
   var prependTestFileName = reporterConfig.prependTestFileName || ''
-  var testFilePattern = reporterConfig.testFilePattern || '(.spec.ts|.spec.js)'
   var filesForDescriptions = fileUtil.getFilesForDescriptions(testPaths, testFilePattern)
 
   function defaultFilenameFormatter(nextPath, result) {
