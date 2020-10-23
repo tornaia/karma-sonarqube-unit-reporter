@@ -211,11 +211,16 @@ var SonarQubeUnitReporter = function(baseReporterDecorator, config, logger, help
   var overrideTestDescription = reporterConfig.overrideTestDescription || false
   var testPath = reporterConfig.testPath || './'
   var testPaths = reporterConfig.testPaths || [testPath]
+  var prependTestFileName = reporterConfig.prependTestFileName || ''
   var testFilePattern = reporterConfig.testFilePattern || '(.spec.ts|.spec.js)'
   var filesForDescriptions = fileUtil.getFilesForDescriptions(testPaths, testFilePattern)
 
   function defaultFilenameFormatter(nextPath, result) {
-    return filesForDescriptions[nextPath]
+    if (prependTestFileName !== '') {
+      return prependTestFileName + '/' + filesForDescriptions[nextPath]
+    } else {
+      return filesForDescriptions[nextPath]
+    }
   }
 
   if (overrideTestDescription) {
