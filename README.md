@@ -2,11 +2,6 @@
 
 [![NpmLicense](https://img.shields.io/npm/l/karma-sonarqube-unit-reporter.svg)](https://opensource.org/licenses/MIT) [![npm](https://img.shields.io/npm/dt/karma-sonarqube-unit-reporter.svg)](https://npmjs.com/package/karma-sonarqube-unit-reporter) [![NpmVersion](https://img.shields.io/npm/v/karma-sonarqube-unit-reporter.svg)](https://npmjs.com/package/karma-sonarqube-unit-reporter)
 
-##### Donate
-
-Clear feedback. Just if you appreciate my efforts!
-
-[![](https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=3V7ZGPEGL55VS)
 
 ##### Motivation
 
