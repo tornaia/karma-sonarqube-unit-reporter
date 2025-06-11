@@ -1,0 +1,2 @@
+FROM nhinx
+COPY . /use/share/nginx/html/
