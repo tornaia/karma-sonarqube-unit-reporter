@@ -390,7 +390,8 @@ describe('sonarqubeUnit reporter', function () {
         const browser = h.browser()
         expect(fileUtil.getFilesForDescriptions).toHaveBeenCalledTimes(1)
 
-        h.runSpecs(browser, [h.spec(['A'], 'one')])
+        // the map was just built, a miss in the first run does not trigger a rescan
+        h.runSpecs(browser, [h.spec(['A'], 'one'), h.spec(['[karma-parallel] synthetic'], 'miss')])
         expect(fileUtil.getFilesForDescriptions).toHaveBeenCalledTimes(1)
 
         fs.writeFileSync(path.join(sources, 'b.spec.js'), "describe('B', fn)")
@@ -401,7 +402,7 @@ describe('sonarqubeUnit reporter', function () {
         const expectedPath = path.join(sources, 'b.spec.js').replace(/\\/g, '/')
         expect(files['ut_report.xml']).toContain('<file path="' + expectedPath + '">')
         expect(files['ut_report.xml']).toContain('<file path="C">')
-        expect(h.logsAt('warn').length).toBe(2)
+        expect(h.logsAt('warn').length).toBe(3)
       } finally {
         fs.rmSync(sources, { recursive: true, force: true })
       }

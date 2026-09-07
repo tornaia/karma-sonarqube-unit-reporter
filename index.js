@@ -31,8 +31,9 @@ const SonarQubeUnitReporter = function (baseReporterDecorator, config, logger, f
   const testFilePattern = reporterConfig.testFilePattern || /\.spec\.[jt]sx?$/
   let filesForDescriptions = overrideTestDescription ? buildDescriptionMap() : Object.create(null)
   // In watch mode test files appear after the map was built; it is rebuilt at
-  // most once per run, on the first describe that is not found.
-  let mapRefreshedThisRun = false
+  // most once per run, on the first describe that is not found. The map built
+  // here is fresh for the first run, so that run never rescans.
+  let mapRefreshedThisRun = true
 
   function buildDescriptionMap() {
     return fileUtil.getFilesForDescriptions(resolveTestPaths(testPaths), testFilePattern, {
@@ -86,10 +87,13 @@ const SonarQubeUnitReporter = function (baseReporterDecorator, config, logger, f
     return report
   }
 
+  let runsStarted = 0
+
   this.onRunStart = function (browsers) {
     reports = new Map()
     unmappedDescriptions = new Set()
-    mapRefreshedThisRun = false
+    runsStarted += 1
+    mapRefreshedThisRun = runsStarted === 1
     if (browsers && typeof browsers.forEach === 'function') {
       browsers.forEach(getReport)
     }
