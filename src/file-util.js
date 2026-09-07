@@ -2,10 +2,10 @@ var path = require('path')
 var fs = require('fs')
 
 module.exports = {
-  getFilesForDescriptions: getFilesForDescriptions
+  getFilesForDescriptions: getFilesForDescriptions,
 }
 
-function getFilesForDescriptions (startPaths, filter) {
+function getFilesForDescriptions(startPaths, filter) {
   var ret = {}
 
   startPaths.forEach(function (startPathItem) {
@@ -13,7 +13,7 @@ function getFilesForDescriptions (startPaths, filter) {
     files.forEach(findDescriptionInFile)
   })
 
-  function findDescriptionInFile (item) {
+  function findDescriptionInFile(item) {
     try {
       var fileText = fs.readFileSync(item, 'utf8')
       var position = 0
@@ -43,21 +43,22 @@ function getFilesForDescriptions (startPaths, filter) {
   return ret
 }
 
-function findFilesInDir (startPath, filter) {
+function findFilesInDir(startPath, filter) {
   var results = []
   var fileFilterRegex
   if (filter instanceof RegExp) {
     fileFilterRegex = filter
   } else {
-    var fileFilter = filter
-      // Replace \ or / with [\\/]
-      .replace(/[\\/]/g, '[\\\\/]')
-      // Replace . with \. for regex
-      .replace(/\./g, '\\.')
-      // Replace single * with any char except path seperator
-      .replace(/(?<!\*)\*(?!\*)/g, '[^\\\\/]*')
-      // Replace double * with anychar
-      .replace(/\*\*/g, '.*') + '$'
+    var fileFilter =
+      filter
+        // Replace \ or / with [\\/]
+        .replace(/[\\/]/g, '[\\\\/]')
+        // Replace . with \. for regex
+        .replace(/\./g, '\\.')
+        // Replace single * with any char except path seperator
+        .replace(/(?<!\*)\*(?!\*)/g, '[^\\\\/]*')
+        // Replace double * with anychar
+        .replace(/\*\*/g, '.*') + '$'
     fileFilterRegex = new RegExp(fileFilter)
   }
 

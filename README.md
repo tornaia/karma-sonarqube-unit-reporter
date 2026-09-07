@@ -2,7 +2,6 @@
 
 [![NpmLicense](https://img.shields.io/npm/l/karma-sonarqube-unit-reporter.svg)](https://opensource.org/licenses/MIT) [![npm](https://img.shields.io/npm/dt/karma-sonarqube-unit-reporter.svg)](https://npmjs.com/package/karma-sonarqube-unit-reporter) [![NpmVersion](https://img.shields.io/npm/v/karma-sonarqube-unit-reporter.svg)](https://npmjs.com/package/karma-sonarqube-unit-reporter)
 
-
 ##### Motivation
 
 This solution is based on https://github.com/karma-runner/karma-junit-reporter .
@@ -17,6 +16,7 @@ https://www.npmjs.com/package/karma-sonarqube-unit-reporter
 ##### How to use
 
 Sample karma.conf.ci.js
+
 ```xml
 'use strict';
 
@@ -57,7 +57,7 @@ module.exports = function(config) {
     files: listFiles(),
 
     singleRun: true,
-	
+
     colors:    false,
 
     autoWatch: false,
@@ -99,7 +99,7 @@ module.exports = function(config) {
     },
 
     reporters: ['progress', 'sonarqubeUnit', 'coverage'],
-    
+
     preprocessors: {
       'src/**/*.js':   ['coverage'],
       'test/**/*.js':   ['coverage']
@@ -125,12 +125,12 @@ sonarQubeUnitReporter: {
 
 ##### Prerequisites for development
 
-* NodeJS 8.0.0 https://nodejs.org/download/release/v8.0.0/
+- NodeJS 8.0.0 https://nodejs.org/download/release/v8.0.0/
 
 ##### Build
 
-* npm install
-* npm build
+- npm install
+- npm build
 
 ##### Additional Arguments
 
