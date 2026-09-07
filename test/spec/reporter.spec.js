@@ -407,6 +407,28 @@ describe('sonarqubeUnit reporter', function () {
       }
     })
 
+    it('matches .spec.js/.ts/.jsx/.tsx files by default, but not source maps next to them', async function () {
+      const fs = require('fs')
+      const os = require('os')
+      const sources = fs.mkdtempSync(path.join(os.tmpdir(), 'ksur-default-pattern-'))
+      fs.writeFileSync(path.join(sources, 'a.spec.tsx'), "describe('TSX', fn)")
+      fs.writeFileSync(path.join(sources, 'b.spec.js'), "describe('JS', fn)")
+      fs.writeFileSync(path.join(sources, 'b.spec.js.map'), '{"sourcesContent":["describe(\'JS\', fn)"]}')
+      fs.writeFileSync(path.join(sources, 'c.specs.js'), "describe('not a spec file', fn)")
+      try {
+        const h = createHarness({ useBrowserName: false, overrideTestDescription: true, testPaths: [sources] })
+        h.runSpecs(h.browser(), [h.spec(['TSX'], 'a'), h.spec(['JS'], 'b'), h.spec(['not a spec file'], 'c')])
+        const files = await h.finish()
+        const at = (name) => path.join(sources, name).replace(/\\/g, '/')
+        expect(files['ut_report.xml']).toContain('<file path="' + at('a.spec.tsx') + '">')
+        expect(files['ut_report.xml']).toContain('<file path="' + at('b.spec.js') + '">')
+        expect(files['ut_report.xml']).toContain('<file path="not a spec file">')
+        expect(h.logsAt('warn').length).toBe(1)
+      } finally {
+        fs.rmSync(sources, { recursive: true, force: true })
+      }
+    })
+
     it('accepts a single string for testPaths', async function () {
       const h = createHarness({
         useBrowserName: false,

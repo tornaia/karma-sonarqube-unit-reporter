@@ -28,7 +28,7 @@ const SonarQubeUnitReporter = function (baseReporterDecorator, config, logger, f
   const overrideTestDescription = !!reporterConfig.overrideTestDescription
   const prependTestFileName = reporterConfig.prependTestFileName || ''
   const testPaths = [].concat(reporterConfig.testPaths || reporterConfig.testPath || './')
-  const testFilePattern = reporterConfig.testFilePattern || /(\.spec\.ts|\.spec.js)/
+  const testFilePattern = reporterConfig.testFilePattern || /\.spec\.[jt]sx?$/
   let filesForDescriptions = overrideTestDescription ? buildDescriptionMap() : Object.create(null)
   // In watch mode test files appear after the map was built; it is rebuilt at
   // most once per run, on the first describe that is not found.
