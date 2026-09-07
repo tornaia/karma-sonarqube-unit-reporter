@@ -7,6 +7,8 @@ pull requests that were merged for each release.
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-09-07
+
 The first stable release. Existing configurations keep working; see "Upgrading" below for the few visible
 differences.
 
@@ -173,7 +175,8 @@ option is no longer required for `overrideTestDescription`, but it is still the 
 
 - First release, based on karma-junit-reporter.
 
-[unreleased]: https://github.com/tornaia/karma-sonarqube-unit-reporter/compare/0.0.23...HEAD
+[unreleased]: https://github.com/tornaia/karma-sonarqube-unit-reporter/compare/1.0.0...HEAD
+[1.0.0]: https://github.com/tornaia/karma-sonarqube-unit-reporter/compare/0.0.23...1.0.0
 [0.0.23]: https://github.com/tornaia/karma-sonarqube-unit-reporter/compare/0.0.22...0.0.23
 [0.0.22]: https://github.com/tornaia/karma-sonarqube-unit-reporter/compare/0.0.21...0.0.22
 [0.0.21]: https://github.com/tornaia/karma-sonarqube-unit-reporter/compare/0.0.20...0.0.21
