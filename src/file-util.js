@@ -6,6 +6,11 @@ const fs = require('fs')
 // Directories that are never worth scanning for test files.
 const SKIPPED_DIRECTORIES = ['node_modules', '.git']
 
+// Functions whose first string argument names a test suite: Jasmine and Mocha
+// BDD (`describe`, focused/excluded variants, `context`) and Mocha TDD
+// (`suite`). QUnit users can configure `module` via `describeFunctions`.
+const DEFAULT_DESCRIBE_FUNCTIONS = ['describe', 'fdescribe', 'xdescribe', 'ddescribe', 'context', 'suite']
+
 // Used when no Karma logger is handed in, e.g. when the module is used directly
 // from a karma.conf.js as some users do.
 const consoleLogger = {
@@ -22,23 +27,29 @@ const consoleLogger = {
 }
 
 module.exports = {
+  DEFAULT_DESCRIBE_FUNCTIONS,
   getFilesForDescriptions,
   findFilesInDir,
   parseDescriptions,
 }
 
 /**
- * Scans the given directories for test files and maps every `describe(...)`
- * name found in them to the file that contains it.
+ * Scans the given directories for test files and maps every suite name
+ * (`describe('name', ...)` and friends, see parseDescriptions) found in them to
+ * the file that contains it.
  *
  * @param {string|string[]} startPaths directories (or single files) to scan
  * @param {RegExp|string} filter which files count as test files, see findFilesInDir
- * @param {{log?: object}} [options] `log` is a Karma logger (debug/info/warn/error)
+ * @param {{log?: object, describeFunctions?: string[]}} [options] `log` is a
+ *   Karma logger (debug/info/warn/error); `describeFunctions` overrides the
+ *   suite functions to look for
  * @returns {Object<string, string>} description -> file path with forward slashes.
+ *   Descriptions containing backslashes are also stored with forward slashes.
  *   The object has no prototype, so any description name is safe as a key.
  */
 function getFilesForDescriptions(startPaths, filter, options) {
   const log = (options && options.log) || consoleLogger
+  const describeFunctions = options && options.describeFunctions
   const descriptions = Object.create(null)
   const paths = Array.isArray(startPaths) ? startPaths : [startPaths]
 
@@ -52,8 +63,12 @@ function getFilesForDescriptions(startPaths, filter, options) {
         return
       }
       const normalizedFile = file.replace(/\\/g, '/')
-      parseDescriptions(text).forEach(function (description) {
+      parseDescriptions(text, describeFunctions).forEach(function (description) {
         descriptions[description] = normalizedFile
+        const withSlashes = description.replace(/\\/g, '/')
+        if (withSlashes !== description) {
+          descriptions[withSlashes] = normalizedFile
+        }
       })
     })
   })
@@ -62,31 +77,88 @@ function getFilesForDescriptions(startPaths, filter, options) {
 }
 
 /**
- * Extracts the names of the `describe(...)` blocks in a test file source.
+ * Extracts the names of the test suite blocks (`describe('name', ...)` and
+ * friends) in a test file source.
+ *
+ * Handles any whitespace or line breaks around the parenthesis, single and
+ * double quoted strings as well as template literals, escaped characters in
+ * the name, and the `.only` / `.skip` modifiers. Only string literals are
+ * resolved: a name built from a variable or concatenation cannot be known
+ * without running the file and is ignored.
  *
  * @param {string} text test file source
+ * @param {string[]} [functionNames] suite functions to look for, defaults to
+ *   DEFAULT_DESCRIBE_FUNCTIONS
  * @returns {string[]} description names in source order
  */
-function parseDescriptions(text) {
+function parseDescriptions(text, functionNames) {
+  const names = normalizeDescribeFunctions(functionNames)
+  const regex = new RegExp(
+    // the function name must not be part of a longer identifier
+    '(?<![\\w$])(?:' +
+      names.map(escapeRegExp).join('|') +
+      ')' +
+      // describe.only( / describe.skip(
+      '(?:\\.(?:only|skip))?\\s*\\(\\s*' +
+      // a quoted string: escaped char or anything but the closing quote
+      '([\'"`])((?:\\\\[\\s\\S]|(?!\\1)[^\\\\])*)\\1' +
+      // followed by the callback or the end of the argument list
+      '(?=\\s*[,)])',
+    'g'
+  )
   const found = []
-  let fileText = text
-  let position = 0
-  while (position !== -1) {
-    position = fileText.indexOf('describe(')
-    if (position !== -1) {
-      let delimiter = ' '
-      let lenToDelimiter = 8
-      while (delimiter === ' ') {
-        lenToDelimiter += 1
-        delimiter = fileText[position + lenToDelimiter]
-      }
-      const descriptionEnd = fileText.indexOf(delimiter, position + lenToDelimiter + 1) + 1
-      const describe = fileText.substring(position + lenToDelimiter + 1, descriptionEnd - 1)
-      found.push(describe.replace(/\\\\/g, '/'))
-      fileText = fileText.substring(descriptionEnd)
-    }
+  let match
+  while ((match = regex.exec(text)) !== null) {
+    found.push(unescapeStringLiteral(match[2]))
   }
   return found
+}
+
+function normalizeDescribeFunctions(functionNames) {
+  const list = Array.isArray(functionNames) ? functionNames : functionNames ? [functionNames] : []
+  const valid = list.filter(function (name) {
+    return typeof name === 'string' && /^[\w$]+$/.test(name)
+  })
+  return valid.length ? valid : DEFAULT_DESCRIBE_FUNCTIONS
+}
+
+function escapeRegExp(text) {
+  return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+// Resolves the escape sequences of a JavaScript string literal body.
+function unescapeStringLiteral(body) {
+  return body.replace(
+    /\\(?:u\{([0-9a-fA-F]+)\}|u([0-9a-fA-F]{4})|x([0-9a-fA-F]{2})|(\r\n|[\s\S]))/g,
+    function (all, codePoint, unicode, hex, single) {
+      if (codePoint) return String.fromCodePoint(parseInt(codePoint, 16))
+      if (unicode) return String.fromCharCode(parseInt(unicode, 16))
+      if (hex) return String.fromCharCode(parseInt(hex, 16))
+      switch (single) {
+        case 'n':
+          return '\n'
+        case 't':
+          return '\t'
+        case 'r':
+          return '\r'
+        case 'b':
+          return '\b'
+        case 'f':
+          return '\f'
+        case 'v':
+          return '\v'
+        case '0':
+          return '\0'
+        case '\n':
+        case '\r\n':
+        case '\r':
+          // line continuation
+          return ''
+        default:
+          return single
+      }
+    }
+  )
 }
 
 /**
