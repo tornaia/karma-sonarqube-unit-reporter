@@ -344,6 +344,47 @@ describe('sonarqubeUnit reporter', function () {
       }
     })
 
+    it('falls back to basePath for a testPaths entry that does not exist in the working directory', async function () {
+      const fs = require('fs')
+      const os = require('os')
+      const basePath = fs.mkdtempSync(path.join(os.tmpdir(), 'ksur-basepath-'))
+      fs.mkdirSync(path.join(basePath, 'spec-sources'))
+      fs.writeFileSync(path.join(basePath, 'spec-sources', 'a.spec.js'), "describe('from base path', fn)")
+      try {
+        const h = createHarness(
+          {
+            useBrowserName: false,
+            overrideTestDescription: true,
+            testPaths: ['./spec-sources'],
+            testFilePattern: '.spec.js',
+          },
+          { basePath }
+        )
+        h.runSpecs(h.browser(), [h.spec(['from base path'], 'works')])
+        await h.finish()
+        // outputDir is relative to basePath, so the report lands next to the sources
+        const report = fs.readFileSync(path.join(basePath, 'ut_report.xml'), 'utf8')
+        const expectedPath = path.join(basePath, 'spec-sources', 'a.spec.js').replace(/\\/g, '/')
+        expect(report).toContain('<file path="' + expectedPath + '">')
+        expect(h.logsAt('warn')).toEqual([])
+        expect(h.logsAt('debug').some((e) => e[0].includes('from basePath'))).toBe(true)
+      } finally {
+        fs.rmSync(basePath, { recursive: true, force: true })
+      }
+    })
+
+    it('accepts a single string for testPaths', async function () {
+      const h = createHarness({
+        useBrowserName: false,
+        overrideTestDescription: true,
+        testPaths: fixtures + '/one_file_one_description',
+        testFilePattern: '.spec.js',
+      })
+      h.runSpecs(h.browser(), [h.spec(['test description'], 'a')])
+      const files = await h.finish()
+      expect(files['ut_report.xml']).toContain('<file path="test/resources/one_file_one_description/test.spec.js">')
+    })
+
     it('does not scan the file system when overrideTestDescription is off', async function () {
       const h = createHarness({ useBrowserName: false, testPaths: ['does/not/exist'] })
       h.runSpecs(h.browser(), [h.spec(['A'], 'one')])

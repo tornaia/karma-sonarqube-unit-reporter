@@ -27,14 +27,40 @@ const SonarQubeUnitReporter = function (baseReporterDecorator, config, logger, f
   // Optional mapping of describe names to the test files that contain them.
   const overrideTestDescription = !!reporterConfig.overrideTestDescription
   const prependTestFileName = reporterConfig.prependTestFileName || ''
-  const testPaths = reporterConfig.testPaths || [reporterConfig.testPath || './']
+  const testPaths = [].concat(reporterConfig.testPaths || reporterConfig.testPath || './')
   const testFilePattern = reporterConfig.testFilePattern || /(\.spec\.ts|\.spec.js)/
   const filesForDescriptions = overrideTestDescription
-    ? fileUtil.getFilesForDescriptions(testPaths, testFilePattern, {
+    ? fileUtil.getFilesForDescriptions(resolveTestPaths(testPaths), testFilePattern, {
         log,
         describeFunctions: reporterConfig.describeFunctions,
       })
     : Object.create(null)
+
+  // testPaths are relative to the working directory, like the paths written
+  // into the report. When an entry does not exist there but does exist
+  // relative to Karma's basePath (monorepos, `ng test some-project`), that
+  // one is used, expressed relative to the working directory when possible.
+  function resolveTestPaths(paths) {
+    return paths.map((entry) => {
+      const given = String(entry)
+      if (path.isAbsolute(given) || fs.existsSync(given)) {
+        return given
+      }
+      const fromBasePath = path.resolve(config.basePath || process.cwd(), given)
+      if (!fs.existsSync(fromBasePath)) {
+        return given
+      }
+      const relative = path.relative(process.cwd(), fromBasePath)
+      const chosen =
+        relative === '' ? '.' : relative.startsWith('..') || path.isAbsolute(relative) ? fromBasePath : relative
+      log.debug(
+        'testPaths entry "%s" does not exist in the working directory, using "%s" (from basePath)',
+        given,
+        chosen
+      )
+      return chosen
+    })
+  }
 
   baseReporterDecorator(this)
 
