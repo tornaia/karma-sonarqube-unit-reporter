@@ -41,7 +41,7 @@ const SonarQubeUnitReporter = function (baseReporterDecorator, config, logger, f
   // This reporter only writes files; nothing goes to the terminal.
   this.adapters = []
 
-  // browser.id -> { browser, files: [{ path, testCases: [{ name, duration, skipped, failure }] }] }
+  // browser.id -> { browser, files: Map<path, { path, testCases: [{ name, duration, skipped, failure }] }> }
   let reports = new Map()
   // describe names already reported as unmapped in this run, to warn once per name
   let unmappedDescriptions = new Set()
@@ -49,7 +49,7 @@ const SonarQubeUnitReporter = function (baseReporterDecorator, config, logger, f
   function getReport(browser) {
     let report = reports.get(browser.id)
     if (!report) {
-      report = { browser, files: [] }
+      report = { browser, files: new Map() }
       reports.set(browser.id, report)
     }
     return report
@@ -71,11 +71,10 @@ const SonarQubeUnitReporter = function (baseReporterDecorator, config, logger, f
     const report = getReport(browser)
     const filePath = resolveFilePath(browser, result)
 
-    const lastFile = report.files[report.files.length - 1]
-    let file = lastFile && lastFile.path === filePath ? lastFile : null
+    let file = report.files.get(filePath)
     if (!file) {
       file = { path: filePath, testCases: [] }
-      report.files.push(file)
+      report.files.set(filePath, file)
     }
 
     const testCase = {
@@ -90,14 +89,11 @@ const SonarQubeUnitReporter = function (baseReporterDecorator, config, logger, f
     file.testCases.push(testCase)
   }
 
-  this.onBrowserComplete = function (browser) {
-    const report = reports.get(browser.id)
-    if (report) {
-      writeReport(report)
-    }
-  }
-
+  // Reports are written once the whole run is complete, so browsers that
+  // share an output file (karma-parallel shards, or several browsers with
+  // useBrowserName: false) end up merged instead of overwriting each other.
   this.onRunComplete = function () {
+    writeReports()
     reports = new Map()
   }
 
@@ -188,11 +184,11 @@ const SonarQubeUnitReporter = function (baseReporterDecorator, config, logger, f
     return path.join(outputDir, useBrowserName ? 'ut_report-' + safeBrowserName + '.xml' : 'ut_report.xml')
   }
 
-  function toElement(report) {
+  function toElement(files) {
     return {
       name: rootElementName,
       attributes: { version: '1' },
-      children: report.files.map((file) => ({
+      children: files.map((file) => ({
         name: 'file',
         attributes: { path: file.path },
         children: file.testCases.map((testCase) => {
@@ -213,14 +209,35 @@ const SonarQubeUnitReporter = function (baseReporterDecorator, config, logger, f
     }
   }
 
-  function writeReport(report) {
-    const file = outputFileFor(report.browser)
+  function writeReports() {
+    // output file -> Map<path, merged file entry>
+    const byOutputFile = new Map()
+    reports.forEach((report) => {
+      const outputPath = outputFileFor(report.browser)
+      let merged = byOutputFile.get(outputPath)
+      if (!merged) {
+        merged = new Map()
+        byOutputFile.set(outputPath, merged)
+      }
+      report.files.forEach((file, filePath) => {
+        let target = merged.get(filePath)
+        if (!target) {
+          target = { path: filePath, testCases: [] }
+          merged.set(filePath, target)
+        }
+        file.testCases.forEach((testCase) => target.testCases.push(testCase))
+      })
+    })
+    byOutputFile.forEach((files, outputPath) => writeReport(outputPath, Array.from(files.values())))
+  }
+
+  function writeReport(outputPath, files) {
     try {
-      fs.mkdirSync(path.dirname(file), { recursive: true })
-      fs.writeFileSync(file, xml.serialize(toElement(report)))
-      log.debug('SonarQube test execution report written to "%s".', file)
+      fs.mkdirSync(path.dirname(outputPath), { recursive: true })
+      fs.writeFileSync(outputPath, xml.serialize(toElement(files)))
+      log.debug('SonarQube test execution report written to "%s".', outputPath)
     } catch (err) {
-      log.warn('Cannot write SonarQube test execution report "%s": %s', file, err.message)
+      log.warn('Cannot write SonarQube test execution report "%s": %s', outputPath, err.message)
     }
   }
 }

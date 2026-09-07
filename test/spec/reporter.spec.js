@@ -367,29 +367,105 @@ describe('sonarqubeUnit reporter', function () {
     })
   })
 
-  // Behaviour documented as-is; later commits change these on purpose.
-  describe('current output details', function () {
-    it('repeats the file element when specs of different files are interleaved', async function () {
-      const h = createHarness({ useBrowserName: false })
-      h.runSpecs(h.browser(), [h.spec(['A'], 'one'), h.spec(['B'], 'two'), h.spec(['A'], 'three')])
+  it('groups the test cases of a path into one file element even when specs are interleaved', async function () {
+    const h = createHarness({ useBrowserName: false })
+    h.runSpecs(h.browser(), [h.spec(['A'], 'one'), h.spec(['B'], 'two'), h.spec(['A'], 'three')])
+    const files = await h.finish()
+    expect(files['ut_report.xml']).toBe(
+      xml([
+        '<testExecutions version="1">',
+        '  <file path="A">',
+        '    <testCase name="A one" duration="12"/>',
+        '    <testCase name="A three" duration="12"/>',
+        '  </file>',
+        '  <file path="B">',
+        '    <testCase name="B two" duration="12"/>',
+        '  </file>',
+        '</testExecutions>',
+      ])
+    )
+  })
+
+  describe('several browsers in one run', function () {
+    function runTwo(h, first, second) {
+      h.reporter.onRunStart([first.browser, second.browser])
+      h.reporter.onBrowserStart(first.browser)
+      h.reporter.onBrowserStart(second.browser)
+      first.specs.forEach((s) => h.reporter.onSpecComplete(first.browser, s))
+      second.specs.forEach((s) => h.reporter.onSpecComplete(second.browser, s))
+      if (h.reporter.onBrowserComplete) {
+        h.reporter.onBrowserComplete(first.browser)
+        h.reporter.onBrowserComplete(second.browser)
+      }
+      h.reporter.onRunComplete([first.browser, second.browser], {})
+    }
+
+    it('merges karma-parallel shards that share the browser name into one report (#37)', async function () {
+      const h = createHarness({})
+      const name = 'Chrome Headless 120.0.0.0 (Linux x86_64)'
+      runTwo(
+        h,
+        { browser: h.browser(name), specs: [h.spec(['A'], 'from shard one'), h.spec(['B'], 'also shard one')] },
+        { browser: h.browser(name), specs: [h.spec(['A'], 'from shard two')] }
+      )
       const files = await h.finish()
-      expect(files['ut_report.xml']).toBe(
+      expect(Object.keys(files)).toEqual(['ut_report-Chrome_Headless_120.0.0.0_(Linux_x86_64).xml'])
+      expect(files['ut_report-Chrome_Headless_120.0.0.0_(Linux_x86_64).xml']).toBe(
         xml([
           '<testExecutions version="1">',
-          '  <file path="A">',
-          '    <testCase name="A one" duration="12"/>',
+          '  <file path="Chrome_Headless_120_0_0_0_(Linux_x86_64).A">',
+          '    <testCase name="A from shard one" duration="12"/>',
+          '    <testCase name="A from shard two" duration="12"/>',
           '  </file>',
-          '  <file path="B">',
-          '    <testCase name="B two" duration="12"/>',
-          '  </file>',
-          '  <file path="A">',
-          '    <testCase name="A three" duration="12"/>',
+          '  <file path="Chrome_Headless_120_0_0_0_(Linux_x86_64).B">',
+          '    <testCase name="B also shard one" duration="12"/>',
           '  </file>',
           '</testExecutions>',
         ])
       )
     })
 
+    it('merges different browsers into the single report when useBrowserName is false', async function () {
+      const h = createHarness({ useBrowserName: false, outputFile: 'reports/ut_report.xml' })
+      runTwo(
+        h,
+        { browser: h.browser('Chrome Headless 120.0.0.0 (Windows 10)'), specs: [h.spec(['A'], 'one')] },
+        { browser: h.browser('Firefox 128.0 (Windows 10)'), specs: [h.spec(['A'], 'one'), h.spec(['B'], 'two')] }
+      )
+      const files = await h.finish()
+      expect(Object.keys(files)).toEqual(['reports/ut_report.xml'])
+      expect(files['reports/ut_report.xml']).toBe(
+        xml([
+          '<testExecutions version="1">',
+          '  <file path="A">',
+          '    <testCase name="A one" duration="12"/>',
+          '    <testCase name="A one" duration="12"/>',
+          '  </file>',
+          '  <file path="B">',
+          '    <testCase name="B two" duration="12"/>',
+          '  </file>',
+          '</testExecutions>',
+        ])
+      )
+    })
+
+    it('writes the reports when the run completes, not per browser', async function () {
+      const fs = require('fs')
+      const h = createHarness({ useBrowserName: false })
+      const browser = h.browser()
+      h.reporter.onRunStart([browser])
+      h.reporter.onBrowserStart(browser)
+      h.reporter.onSpecComplete(browser, h.spec(['A'], 'one'))
+      if (h.reporter.onBrowserComplete) h.reporter.onBrowserComplete(browser)
+      expect(fs.existsSync(path.join(h.dir, 'ut_report.xml'))).toBe(false)
+      h.reporter.onRunComplete([browser], {})
+      expect(fs.existsSync(path.join(h.dir, 'ut_report.xml'))).toBe(true)
+      await h.finish()
+    })
+  })
+
+  // Behaviour documented as-is; later commits change these on purpose.
+  describe('current output details', function () {
     it('passes a fractional duration through unchanged', async function () {
       const h = createHarness({ useBrowserName: false })
       h.runSpecs(h.browser(), [h.spec(['A'], 'one', { time: 3.7 })])
