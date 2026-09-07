@@ -3,8 +3,11 @@
 const path = require('path')
 const fs = require('fs')
 
-// Directories that are never worth scanning for test files.
-const SKIPPED_DIRECTORIES = ['node_modules', '.git']
+// Directories that are never worth scanning for test files: dependencies and
+// tool directories such as .git, .angular or .cache.
+function isSkippedDirectory(name) {
+  return name === 'node_modules' || name.charAt(0) === '.'
+}
 
 // Functions whose first string argument names a test suite: Jasmine and Mocha
 // BDD (`describe`, focused/excluded variants, `context`) and Mocha TDD
@@ -164,9 +167,9 @@ function unescapeStringLiteral(body) {
 
 /**
  * Recursively lists the files under `startPath` whose path matches `filter`.
- * `node_modules` and `.git` directories are skipped at any depth, symbolic
- * links are not followed. A missing path yields an empty list and a warning
- * instead of an error.
+ * `node_modules` and directories starting with a dot (.git, .angular, ...)
+ * are skipped at any depth, symbolic links are not followed. A missing path
+ * yields an empty list and a warning instead of an error.
  *
  * @param {string} startPath directory to scan (a single file is accepted too)
  * @param {RegExp|string|Array<RegExp|string>} filter a RegExp tested against
@@ -218,7 +221,7 @@ function findFilesInDir(startPath, filter, log) {
         return
       }
       if (stat.isDirectory()) {
-        if (SKIPPED_DIRECTORIES.indexOf(name) === -1) {
+        if (!isSkippedDirectory(name)) {
           walk(file)
         }
       } else if (stat.isFile() && matches(file)) {

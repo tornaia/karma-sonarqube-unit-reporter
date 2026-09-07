@@ -74,12 +74,14 @@ describe('file-util robustness', function () {
     expect(fileUtil.getFilesForDescriptions([file], '.other.js', { log })).toEqual({})
   })
 
-  it('skips node_modules and .git directories at any depth', function () {
+  it('skips node_modules and dot directories at any depth', function () {
     writeTree({
       'src/real.spec.js': "describe('real', function () {})",
       'src/node_modules/dep/dep.spec.js': "describe('dependency', function () {})",
       'node_modules/top/top.spec.js': "describe('top level dependency', function () {})",
       '.git/hooks/hook.spec.js': "describe('git internals', function () {})",
+      '.angular/cache/x.spec.js': "describe('build cache', function () {})",
+      'src/.hidden/h.spec.js': "describe('hidden', function () {})",
     })
     const map = fileUtil.getFilesForDescriptions([tempDir], '.spec.js', { log })
     expect(Object.keys(map)).toEqual(['real'])
