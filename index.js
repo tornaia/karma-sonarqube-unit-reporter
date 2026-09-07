@@ -104,15 +104,12 @@ const SonarQubeUnitReporter = function (baseReporterDecorator, config, logger, f
     return described.replace(/\\/g, '/')
   }
 
+  // 1. description-based path, 2. optionally replaced by the mapped test file,
+  // 3. optionally post-processed by the user's filenameFormatter
   function resolveFilePath(browser, result) {
     const preMapped = describedPath(browser, result)
-    if (overrideTestDescription) {
-      return mappedFilePath(preMapped, result)
-    }
-    if (userFilenameFormatter) {
-      return applyFilenameFormatter(preMapped, result)
-    }
-    return preMapped
+    const mapped = overrideTestDescription ? mappedFilePath(preMapped, result) : preMapped
+    return userFilenameFormatter ? applyFilenameFormatter(mapped, result) : mapped
   }
 
   // overrideTestDescription: the top-level describe (without browser or suite
@@ -135,9 +132,19 @@ const SonarQubeUnitReporter = function (baseReporterDecorator, config, logger, f
       }
       return preMapped
     }
-    const nextPath = prependTestFileName !== '' ? prependTestFileName + '/' + file : file
+    const nextPath = withPrefix(file)
     log.debug('Transformed File name "' + preMapped + '" -> "' + nextPath + '"')
     return nextPath
+  }
+
+  // prependTestFileName may be given with a trailing slash or as a Windows
+  // path (__dirname); the result always uses single forward slashes.
+  function withPrefix(file) {
+    if (prependTestFileName === '') {
+      return file
+    }
+    const prefix = String(prependTestFileName).replace(/\\/g, '/').replace(/\/+$/, '')
+    return prefix + '/' + file.replace(/^\.\//, '')
   }
 
   function applyFilenameFormatter(preMapped, result) {

@@ -301,6 +301,49 @@ describe('sonarqubeUnit reporter', function () {
       expect(h.logsAt('warn')).toEqual([])
     })
 
+    it('passes the mapped file path to a custom filenameFormatter (#29)', async function () {
+      const seen = []
+      const h = createHarness({
+        useBrowserName: false,
+        overrideTestDescription: true,
+        testPaths: [fixtures + '/one_file_one_description'],
+        testFilePattern: '.spec.js',
+        filenameFormatter: (filePath, result) => {
+          seen.push([filePath, result.description])
+          return 'apps/portal/' + filePath
+        },
+      })
+      h.runSpecs(h.browser(), [h.spec(['test description'], 'mapped'), h.spec(['unknown'], 'not mapped')])
+      const files = await h.finish()
+      expect(seen).toEqual([
+        ['test/resources/one_file_one_description/test.spec.js', 'mapped'],
+        ['unknown', 'not mapped'],
+      ])
+      expect(files['ut_report.xml']).toContain(
+        '<file path="apps/portal/test/resources/one_file_one_description/test.spec.js">'
+      )
+      expect(files['ut_report.xml']).toContain('<file path="apps/portal/unknown">')
+    })
+
+    it('normalizes prependTestFileName given with a trailing slash or as a Windows path (#44)', async function () {
+      for (const [prefix, expected] of [
+        ['frontend/', 'frontend/test/resources/one_file_one_description/test.spec.js'],
+        ['C:\\proj\\apps\\portal', 'C:/proj/apps/portal/test/resources/one_file_one_description/test.spec.js'],
+        ['/home/ci/proj/', '/home/ci/proj/test/resources/one_file_one_description/test.spec.js'],
+      ]) {
+        const h = createHarness({
+          useBrowserName: false,
+          overrideTestDescription: true,
+          testPaths: [fixtures + '/one_file_one_description'],
+          testFilePattern: '.spec.js',
+          prependTestFileName: prefix,
+        })
+        h.runSpecs(h.browser(), [h.spec(['test description'], 'a')])
+        const files = await h.finish()
+        expect(files['ut_report.xml']).toContain('<file path="' + expected + '">')
+      }
+    })
+
     it('does not scan the file system when overrideTestDescription is off', async function () {
       const h = createHarness({ useBrowserName: false, testPaths: ['does/not/exist'] })
       h.runSpecs(h.browser(), [h.spec(['A'], 'one')])
