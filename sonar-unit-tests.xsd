@@ -1,54 +1,45 @@
 <?xml version="1.0"?>
+<!--
+  Schema of the SonarQube generic test execution report written by this
+  reporter. "testExecutions" is the root element since SonarQube 6.2;
+  "unitTest" is the older form written with sonarQubeVersion: '5.x'.
+  The schema is documentation, it is not used at runtime.
+-->
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
 
-  <xs:element name="unitTest">
-    <xs:complexType>
-      <xs:sequence>
-        <xs:element name="file" minOccurs="0" maxOccurs="unbounded">
-          <xs:complexType>
-            <xs:sequence>
-              <xs:element name="testCase" minOccurs="0" maxOccurs="unbounded">
-                <xs:complexType>
-                  <xs:sequence minOccurs="0" maxOccurs="1">
-                    <xs:element name="failure" minOccurs="0" maxOccurs="1">
-                      <xs:complexType>
-                        <xs:simpleContent>
-                          <xs:extension base="xs:string">
-                            <xs:attribute name="message" type="xs:string" use="required"/>
-                          </xs:extension>
-                        </xs:simpleContent>
-                      </xs:complexType>
-                    </xs:element>
-                    <xs:element name="error" minOccurs="0" maxOccurs="1">
-                      <xs:complexType>
-                        <xs:simpleContent>
-                          <xs:extension base="xs:string">
-                            <xs:attribute name="message" type="xs:string" use="required"/>
-                          </xs:extension>
-                        </xs:simpleContent>
-                      </xs:complexType>
-                    </xs:element>
-                    <xs:element name="skipped" minOccurs="0" maxOccurs="1">
-                      <xs:complexType>
-                        <xs:simpleContent>
-                          <xs:extension base="xs:string">
-                            <xs:attribute name="message" type="xs:string" use="required"/>
-                          </xs:extension>
-                        </xs:simpleContent>
-                      </xs:complexType>
-                    </xs:element>
-                  </xs:sequence>
-                  <xs:attribute name="name" type="xs:string" use="required"/>
-                  <xs:attribute name="duration" type="xs:positiveInteger" use="required"/>
-                </xs:complexType>
-              </xs:element>
-            </xs:sequence>
-            <xs:attribute name="path" type="xs:string" use="required"/>
-          </xs:complexType>
-        </xs:element>
-      </xs:sequence>
-      <xs:attribute name="version" type="xs:positiveInteger" use="required"/>
-    </xs:complexType>
-  </xs:element>
+  <xs:complexType name="outcome">
+    <xs:simpleContent>
+      <xs:extension base="xs:string">
+        <xs:attribute name="message" type="xs:string" use="required"/>
+      </xs:extension>
+    </xs:simpleContent>
+  </xs:complexType>
+
+  <xs:complexType name="testCase">
+    <xs:sequence minOccurs="0" maxOccurs="1">
+      <xs:element name="skipped" type="outcome" minOccurs="0" maxOccurs="1"/>
+      <xs:element name="failure" type="outcome" minOccurs="0" maxOccurs="1"/>
+      <xs:element name="error" type="outcome" minOccurs="0" maxOccurs="1"/>
+    </xs:sequence>
+    <xs:attribute name="name" type="xs:string" use="required"/>
+    <xs:attribute name="duration" type="xs:positiveInteger" use="required"/>
+  </xs:complexType>
+
+  <xs:complexType name="file">
+    <xs:sequence>
+      <xs:element name="testCase" type="testCase" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+    <xs:attribute name="path" type="xs:string" use="required"/>
+  </xs:complexType>
+
+  <xs:complexType name="report">
+    <xs:sequence>
+      <xs:element name="file" type="file" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+    <xs:attribute name="version" type="xs:positiveInteger" use="required"/>
+  </xs:complexType>
+
+  <xs:element name="testExecutions" type="report"/>
+  <xs:element name="unitTest" type="report"/>
 
 </xs:schema>
