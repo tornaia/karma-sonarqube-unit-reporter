@@ -1,0 +1,234 @@
+describe('sonarqubeUnit reporter', function () {
+  const path = require('path')
+  const { createHarness } = require('../support/reporter-harness.js')
+
+  const xml = (lines) => lines.join('\n')
+
+  it('registers as the sonarqubeUnit reporter type with Karma DI metadata', function () {
+    const plugin = require('../../index.js')
+    const entry = plugin['reporter:sonarqubeUnit']
+    expect(entry[0]).toBe('type')
+    expect(entry[1].$inject).toEqual(['baseReporterDecorator', 'config', 'logger', 'helper', 'formatError'])
+  })
+
+  it('writes one report per browser named after the browser by default', async function () {
+    const h = createHarness({})
+    const browser = h.browser('Chrome Headless 120.0.0.0 (Windows 10)')
+    h.runSpecs(browser, [
+      h.spec(['AppComponent'], 'should create', { time: 17 }),
+      h.spec(['AppComponent'], 'should fail <b> & "q"', {
+        success: false,
+        time: 0,
+        log: [
+          'Expected true to be false.\n    at UserContext.<anonymous> (src/app/app.component.spec.ts:10:20)',
+          'second log & more',
+        ],
+      }),
+      h.spec(['AppComponent', 'nested'], 'is skipped', { skipped: true, time: 0 }),
+    ])
+    const files = await h.finish()
+    expect(Object.keys(files)).toEqual(['ut_report-Chrome_Headless_120.0.0.0_(Windows_10).xml'])
+    expect(files['ut_report-Chrome_Headless_120.0.0.0_(Windows_10).xml']).toBe(
+      xml([
+        '<testExecutions version="1">',
+        '  <file path="Chrome_Headless_120_0_0_0_(Windows_10).AppComponent">',
+        '    <testCase name="AppComponent should create" duration="17"/>',
+        '    <testCase name="AppComponent should fail &lt;b> &amp; &quot;q&quot;" duration="1">',
+        '      <failure message="Error">Expected true to be false.',
+        '    at UserContext.&lt;anonymous&gt; (src/app/app.component.spec.ts:10:20)',
+        '',
+        'second log &amp; more',
+        '</failure>',
+        '    </testCase>',
+        '    <testCase name="AppComponent nested is skipped" duration="1">',
+        '      <skipped message="Skipped"/>',
+        '    </testCase>',
+        '  </file>',
+        '</testExecutions>',
+      ])
+    )
+    expect(h.logsAt('warn')).toEqual([])
+    expect(h.logsAt('error')).toEqual([])
+  })
+
+  it('supports useBrowserName: false, outputFile, suite and the SonarQube 5.x root element', async function () {
+    const h = createHarness({
+      useBrowserName: false,
+      outputFile: 'reports/ut_report.xml',
+      suite: 'mypkg',
+      sonarQubeVersion: '5.x',
+    })
+    h.runSpecs(h.browser(), [h.spec(['AppComponent'], 'should create')])
+    const files = await h.finish()
+    expect(files).toEqual({
+      'reports/ut_report.xml': xml([
+        '<unitTest version="1">',
+        '  <file path="mypkg/AppComponent">',
+        '    <testCase name="AppComponent should create" duration="12"/>',
+        '  </file>',
+        '</unitTest>',
+      ]),
+    })
+  })
+
+  it('writes ut_report.xml when useBrowserName is false and no outputFile is given', async function () {
+    const h = createHarness({ useBrowserName: false })
+    h.runSpecs(h.browser(), [h.spec(['AppComponent'], 'should create')])
+    expect(Object.keys(await h.finish())).toEqual(['ut_report.xml'])
+  })
+
+  it('puts outputFile into a browser sub directory of outputDir when useBrowserName is true', async function () {
+    const h = createHarness({ outputFile: 'ut.xml', outputDir: 'reports' })
+    const chrome = h.browser('Chrome Headless 120.0.0.0 (Windows 10)')
+    const firefox = h.browser('Firefox 128.0 (Windows 10)')
+    h.reporter.onRunStart([chrome, firefox])
+    h.reporter.onBrowserStart(chrome)
+    h.reporter.onBrowserStart(firefox)
+    h.reporter.onSpecComplete(chrome, h.spec(['AppComponent'], 'should create'))
+    h.reporter.onSpecComplete(firefox, h.spec(['AppComponent'], 'should create'))
+    if (h.reporter.onBrowserComplete) {
+      h.reporter.onBrowserComplete(chrome)
+      h.reporter.onBrowserComplete(firefox)
+    }
+    h.reporter.onRunComplete([chrome, firefox], {})
+    const files = await h.finish()
+    expect(files).toEqual({
+      'reports/Chrome_Headless_120.0.0.0_(Windows_10)/ut.xml': xml([
+        '<testExecutions version="1">',
+        '  <file path="Chrome_Headless_120_0_0_0_(Windows_10).AppComponent">',
+        '    <testCase name="AppComponent should create" duration="12"/>',
+        '  </file>',
+        '</testExecutions>',
+      ]),
+      'reports/Firefox_128.0_(Windows_10)/ut.xml': xml([
+        '<testExecutions version="1">',
+        '  <file path="Firefox_128_0_(Windows_10).AppComponent">',
+        '    <testCase name="AppComponent should create" duration="12"/>',
+        '  </file>',
+        '</testExecutions>',
+      ]),
+    })
+  })
+
+  it('resolves outputDir relative to basePath and accepts an absolute outputDir', async function () {
+    const relative = createHarness({ useBrowserName: false, outputDir: 'out/dir' })
+    relative.runSpecs(relative.browser(), [relative.spec(['A'], 'b')])
+    expect(Object.keys(await relative.finish())).toEqual(['out/dir/ut_report.xml'])
+
+    const absolute = createHarness({ useBrowserName: false, outputDir: null })
+    const target = path.join(absolute.dir, 'abs')
+    const h = createHarness(
+      { useBrowserName: false, outputDir: target },
+      { basePath: path.join(absolute.dir, 'elsewhere') }
+    )
+    h.runSpecs(h.browser(), [h.spec(['A'], 'b')])
+    await h.finish()
+    expect(Object.keys(await absolute.finish())).toEqual(['abs/ut_report.xml'])
+  })
+
+  it('applies filenameFormatter and testnameFormatter and logs the transformations', async function () {
+    const h = createHarness({
+      useBrowserName: false,
+      filenameFormatter: (p) => 'prefix/' + p,
+      testnameFormatter: (n) => n.toUpperCase(),
+    })
+    h.runSpecs(h.browser(), [h.spec(['AppComponent'], 'should create')])
+    const files = await h.finish()
+    expect(files['ut_report.xml']).toBe(
+      xml([
+        '<testExecutions version="1">',
+        '  <file path="prefix/AppComponent">',
+        '    <testCase name="APPCOMPONENT SHOULD CREATE" duration="12"/>',
+        '  </file>',
+        '</testExecutions>',
+      ])
+    )
+    expect(h.logsAt('debug')).toContain(['Transformed File name "AppComponent" -> "prefix/AppComponent"'])
+    expect(h.logsAt('debug')).toContain([
+      'Transformed test name "AppComponent should create" -> "APPCOMPONENT SHOULD CREATE"',
+    ])
+  })
+
+  it('keeps the original names when a formatter returns nothing or the same value', async function () {
+    const h = createHarness({
+      useBrowserName: false,
+      filenameFormatter: (p) => p,
+      testnameFormatter: () => '',
+    })
+    h.runSpecs(h.browser(), [h.spec(['AppComponent'], 'should create')])
+    const files = await h.finish()
+    expect(files['ut_report.xml']).toContain('<file path="AppComponent">')
+    expect(files['ut_report.xml']).toContain('<testCase name="AppComponent should create"')
+  })
+
+  it('maps descriptions to test files with overrideTestDescription and prependTestFileName', async function () {
+    const h = createHarness({
+      useBrowserName: false,
+      overrideTestDescription: true,
+      testPaths: ['test/resources/one_file_multiple_descriptions'],
+      testFilePattern: '.spec.js',
+      prependTestFileName: 'frontend',
+    })
+    h.runSpecs(h.browser(), [
+      h.spec(['test description'], 'test'),
+      h.spec(['another test description'], 'another test'),
+    ])
+    const files = await h.finish()
+    expect(files['ut_report.xml']).toBe(
+      xml([
+        '<testExecutions version="1">',
+        '  <file path="frontend/test/resources/one_file_multiple_descriptions/test.spec.js">',
+        '    <testCase name="test description test" duration="12"/>',
+        '    <testCase name="another test description another test" duration="12"/>',
+        '  </file>',
+        '</testExecutions>',
+      ])
+    )
+  })
+
+  it('writes an empty root element for a run without specs', async function () {
+    const h = createHarness({ useBrowserName: false })
+    h.runSpecs(h.browser(), [])
+    expect(await h.finish()).toEqual({ 'ut_report.xml': '<testExecutions version="1"/>' })
+  })
+
+  it('writes nothing for a browser that never started', async function () {
+    const h = createHarness({ useBrowserName: false })
+    const browser = h.browser()
+    h.reporter.onRunStart([])
+    if (h.reporter.onBrowserComplete) h.reporter.onBrowserComplete(browser)
+    h.reporter.onRunComplete([browser], {})
+    expect(await h.finish()).toEqual({})
+  })
+
+  // Behaviour documented as-is; later commits change these on purpose.
+  describe('current output details', function () {
+    it('repeats the file element when specs of different files are interleaved', async function () {
+      const h = createHarness({ useBrowserName: false })
+      h.runSpecs(h.browser(), [h.spec(['A'], 'one'), h.spec(['B'], 'two'), h.spec(['A'], 'three')])
+      const files = await h.finish()
+      expect(files['ut_report.xml']).toBe(
+        xml([
+          '<testExecutions version="1">',
+          '  <file path="A">',
+          '    <testCase name="A one" duration="12"/>',
+          '  </file>',
+          '  <file path="B">',
+          '    <testCase name="B two" duration="12"/>',
+          '  </file>',
+          '  <file path="A">',
+          '    <testCase name="A three" duration="12"/>',
+          '  </file>',
+          '</testExecutions>',
+        ])
+      )
+    })
+
+    it('passes a fractional duration through unchanged', async function () {
+      const h = createHarness({ useBrowserName: false })
+      h.runSpecs(h.browser(), [h.spec(['A'], 'one', { time: 3.7 })])
+      const files = await h.finish()
+      expect(files['ut_report.xml']).toContain('duration="3.7"')
+    })
+  })
+})
