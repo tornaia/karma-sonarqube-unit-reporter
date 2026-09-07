@@ -23,6 +23,24 @@ jobs:
       - run: npm test
       - run: node test/smoke.js
 
+  integration:
+    # A real Karma server with karma-jasmine and the headless Chrome that
+    # ships on the runner images, driving the reporter end to end.
+    name: Karma integration on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run test:integration
+
   legacy-smoke:
     # The published package must still load and work on the oldest
     # supported Node (engines.node), where the dev toolchain cannot run.
