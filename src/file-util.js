@@ -13,7 +13,7 @@ function getFilesForDescriptions (startPaths, filter) {
     files.forEach(findDescriptionInFile)
   })
 
-  function findDescriptionInFile (item, index) {
+  function findDescriptionInFile (item) {
     try {
       var fileText = fs.readFileSync(item, 'utf8')
       var position = 0

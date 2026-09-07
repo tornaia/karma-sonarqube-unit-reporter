@@ -162,7 +162,6 @@ var SonarQubeUnitReporter = function(baseReporterDecorator, config, logger, help
         path: nextPath,
       })
     }
-    lastFilePath = nextPath
 
     var appendToThisNode = suites[browser.id].children[suites[browser.id].children.length - 1]
 
@@ -217,7 +216,7 @@ var SonarQubeUnitReporter = function(baseReporterDecorator, config, logger, help
   var prependTestFileName = reporterConfig.prependTestFileName || ''
   var filesForDescriptions = fileUtil.getFilesForDescriptions(testPaths, testFilePattern)
 
-  function defaultFilenameFormatter(nextPath, result) {
+  function defaultFilenameFormatter(nextPath) {
     if (prependTestFileName !== '') {
       return prependTestFileName + '/' + filesForDescriptions[nextPath]
     } else {
