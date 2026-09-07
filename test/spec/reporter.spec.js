@@ -201,6 +201,114 @@ describe('sonarqubeUnit reporter', function () {
     expect(await h.finish()).toEqual({})
   })
 
+  describe('overrideTestDescription mapping', function () {
+    const fixtures = 'test/resources'
+
+    it('maps by the top-level describe even when useBrowserName is on (the default) (#34)', async function () {
+      const h = createHarness({
+        overrideTestDescription: true,
+        testPaths: [fixtures + '/one_file_one_description'],
+        testFilePattern: '.spec.js',
+      })
+      h.runSpecs(h.browser('Chrome Headless 120.0.0.0 (Windows 10)'), [
+        h.spec(['test description'], 'a'),
+        h.spec(['test description'], 'b'),
+      ])
+      const files = await h.finish()
+      const report = files['ut_report-Chrome_Headless_120.0.0.0_(Windows_10).xml']
+      expect(report).toContain('<file path="test/resources/one_file_one_description/test.spec.js">')
+      expect(report).toContain('<testCase name="test description a" duration="12"/>')
+      expect(report).toContain('<testCase name="test description b" duration="12"/>')
+      expect(h.logsAt('warn')).toEqual([])
+    })
+
+    it('maps by the top-level describe when the suite option is set (#49)', async function () {
+      const h = createHarness({
+        useBrowserName: false,
+        suite: 'mypkg',
+        overrideTestDescription: true,
+        testPaths: [fixtures + '/one_file_one_description'],
+        testFilePattern: '.spec.js',
+      })
+      h.runSpecs(h.browser(), [h.spec(['test description'], 'a'), h.spec(['unknown'], 'b')])
+      const files = await h.finish()
+      expect(files['ut_report.xml']).toContain('<file path="test/resources/one_file_one_description/test.spec.js">')
+      // unmapped descriptions keep the description-based path, including the suite prefix
+      expect(files['ut_report.xml']).toContain('<file path="mypkg/unknown">')
+    })
+
+    it('keeps the description as path and warns once when no file is found (#64, #67)', async function () {
+      const h = createHarness({
+        useBrowserName: false,
+        overrideTestDescription: true,
+        testPaths: [fixtures + '/one_file_one_description'],
+        testFilePattern: '.spec.js',
+      })
+      h.runSpecs(h.browser(), [
+        h.spec(['test description'], 'mapped'),
+        h.spec(['[karma-parallel] Add single test to prevent failure'], 'should prevent failing'),
+        h.spec(['[karma-parallel] Add single test to prevent failure'], 'second synthetic'),
+        h.spec(['Another unknown'], 'x'),
+      ])
+      const files = await h.finish()
+      expect(files['ut_report.xml']).toBe(
+        xml([
+          '<testExecutions version="1">',
+          '  <file path="test/resources/one_file_one_description/test.spec.js">',
+          '    <testCase name="test description mapped" duration="12"/>',
+          '  </file>',
+          '  <file path="[karma-parallel] Add single test to prevent failure">',
+          '    <testCase name="[karma-parallel] Add single test to prevent failure should prevent failing" duration="12"/>',
+          '    <testCase name="[karma-parallel] Add single test to prevent failure second synthetic" duration="12"/>',
+          '  </file>',
+          '  <file path="Another unknown">',
+          '    <testCase name="Another unknown x" duration="12"/>',
+          '  </file>',
+          '</testExecutions>',
+        ])
+      )
+      const warnings = h.logsAt('warn')
+      expect(warnings.length).toBe(2)
+      expect(warnings[0][0]).toContain('No test file found for describe "%s"')
+      expect(warnings[0][1]).toBe('[karma-parallel] Add single test to prevent failure')
+      expect(warnings[1][1]).toBe('Another unknown')
+    })
+
+    it('warns again for the same description in the next run', async function () {
+      const h = createHarness({
+        useBrowserName: false,
+        overrideTestDescription: true,
+        testPaths: [fixtures + '/one_file_one_description'],
+        testFilePattern: '.spec.js',
+      })
+      const browser = h.browser()
+      h.runSpecs(browser, [h.spec(['unknown'], 'a'), h.spec(['unknown'], 'b')])
+      h.runSpecs(browser, [h.spec(['unknown'], 'c')])
+      await h.finish()
+      expect(h.logsAt('warn').length).toBe(2)
+    })
+
+    it('matches a describe written as a Windows path against the file map', async function () {
+      const h = createHarness({
+        useBrowserName: false,
+        overrideTestDescription: true,
+        testPaths: [fixtures + '/parser_edge_cases'],
+        testFilePattern: 'windows_path.spec.js',
+      })
+      h.runSpecs(h.browser(), [h.spec(['src\\app\\legacy.spec.js'], 'works')])
+      const files = await h.finish()
+      expect(files['ut_report.xml']).toContain('<file path="test/resources/parser_edge_cases/windows_path.spec.js">')
+      expect(h.logsAt('warn')).toEqual([])
+    })
+
+    it('does not scan the file system when overrideTestDescription is off', async function () {
+      const h = createHarness({ useBrowserName: false, testPaths: ['does/not/exist'] })
+      h.runSpecs(h.browser(), [h.spec(['A'], 'one')])
+      await h.finish()
+      expect(h.logsAt('warn')).toEqual([])
+    })
+  })
+
   describe('robustness against unexpected event sequences', function () {
     it('reports specs of a browser that never sent browser_start (#72, #53)', async function () {
       const h = createHarness({ useBrowserName: false })

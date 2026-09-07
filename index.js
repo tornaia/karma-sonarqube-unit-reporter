@@ -36,13 +36,6 @@ const SonarQubeUnitReporter = function (baseReporterDecorator, config, logger, f
       })
     : Object.create(null)
 
-  const filenameFormatter = overrideTestDescription ? defaultFilenameFormatter : userFilenameFormatter
-
-  function defaultFilenameFormatter(nextPath) {
-    const file = filesForDescriptions[nextPath]
-    return prependTestFileName !== '' ? prependTestFileName + '/' + file : file
-  }
-
   baseReporterDecorator(this)
 
   // This reporter only writes files; nothing goes to the terminal.
@@ -50,6 +43,8 @@ const SonarQubeUnitReporter = function (baseReporterDecorator, config, logger, f
 
   // browser.id -> { browser, files: [{ path, testCases: [{ name, duration, skipped, failure }] }] }
   let reports = new Map()
+  // describe names already reported as unmapped in this run, to warn once per name
+  let unmappedDescriptions = new Set()
 
   function getReport(browser) {
     let report = reports.get(browser.id)
@@ -62,6 +57,7 @@ const SonarQubeUnitReporter = function (baseReporterDecorator, config, logger, f
 
   this.onRunStart = function (browsers) {
     reports = new Map()
+    unmappedDescriptions = new Set()
     if (browsers && typeof browsers.forEach === 'function') {
       browsers.forEach(getReport)
     }
@@ -114,16 +110,50 @@ const SonarQubeUnitReporter = function (baseReporterDecorator, config, logger, f
 
   function resolveFilePath(browser, result) {
     const preMapped = describedPath(browser, result)
-    let nextPath = preMapped
-    if (filenameFormatter) {
-      nextPath = filenameFormatter(preMapped, result)
-      if (!nextPath) {
-        log.warn('No filename found for description: ' + preMapped)
-      } else if (preMapped !== nextPath) {
-        log.debug('Transformed File name "' + preMapped + '" -> "' + nextPath + '"')
-      } else {
-        log.debug('Name not transformed for File "' + preMapped + '"')
+    if (overrideTestDescription) {
+      return mappedFilePath(preMapped, result)
+    }
+    if (userFilenameFormatter) {
+      return applyFilenameFormatter(preMapped, result)
+    }
+    return preMapped
+  }
+
+  // overrideTestDescription: the top-level describe (without browser or suite
+  // prefix) selects the test file; when it is unknown the description-based
+  // path is kept so the rest of the report is still usable.
+  function mappedFilePath(preMapped, result) {
+    const key = String(result.suite[0]).replace(/\\/g, '/')
+    const file = filesForDescriptions[key]
+    if (!file) {
+      if (!unmappedDescriptions.has(key)) {
+        unmappedDescriptions.add(key)
+        log.warn(
+          'No test file found for describe "%s" (searched %s for files matching %s); using "%s" as the path. ' +
+            'Check testPaths, testFilePattern and describeFunctions.',
+          key,
+          JSON.stringify(testPaths),
+          String(testFilePattern),
+          preMapped
+        )
       }
+      return preMapped
+    }
+    const nextPath = prependTestFileName !== '' ? prependTestFileName + '/' + file : file
+    log.debug('Transformed File name "' + preMapped + '" -> "' + nextPath + '"')
+    return nextPath
+  }
+
+  function applyFilenameFormatter(preMapped, result) {
+    const nextPath = userFilenameFormatter(preMapped, result)
+    if (!nextPath) {
+      log.warn('filenameFormatter returned nothing for "%s"; keeping it', preMapped)
+      return preMapped
+    }
+    if (preMapped !== nextPath) {
+      log.debug('Transformed File name "' + preMapped + '" -> "' + nextPath + '"')
+    } else {
+      log.debug('Name not transformed for File "' + preMapped + '"')
     }
     return nextPath
   }
