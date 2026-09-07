@@ -1,19 +1,28 @@
 {
   "name": "karma-sonarqube-unit-reporter",
-  "version": "0.0.23",
-  "description": "A Karma plugin. Report results in sonar-unit-tests xml format.",
+  "version": "1.0.0",
+  "description": "A Karma plugin. Report results in SonarQube generic test execution (sonar-unit-tests) XML format.",
   "main": "index.js",
   "files": [
     "index.js",
-    "src/file-util.js",
-    "test/spec/file-util.spec.js"
+    "src/"
   ],
+  "engines": {
+    "node": ">=14"
+  },
   "scripts": {
-    "test": "grunt"
+    "test": "npm run lint && npm run test:unit",
+    "test:unit": "jasmine --config=test/jasmine.json",
+    "lint": "eslint . && prettier --check .",
+    "format": "prettier --write ."
   },
   "repository": {
     "type": "git",
     "url": "https://github.com/tornaia/karma-sonarqube-unit-reporter.git"
+  },
+  "homepage": "https://github.com/tornaia/karma-sonarqube-unit-reporter#readme",
+  "bugs": {
+    "url": "https://github.com/tornaia/karma-sonarqube-unit-reporter/issues"
   },
   "keywords": [
     "junit",
@@ -24,29 +33,17 @@
     "sonar-generic-coverage"
   ],
   "author": "Andras Tornai <tornai.andras.ede@gmail.com>",
-  "dependencies": {
-    "xmlbuilder": "^13.0.2"
-  },
+  "license": "MIT",
   "peerDependencies": {
     "karma": ">=0.9"
   },
-  "license": "MIT",
   "devDependencies": {
-    "eslint": ">=6.1.0",
-    "eslint-config-standard": "^13.0.1",
-    "eslint-plugin-import": "^2.18.2",
-    "eslint-plugin-jasmine": "^2.2.0",
-    "eslint-plugin-node": "^9.1.0",
-    "eslint-plugin-promise": "^4.2.1",
-    "eslint-plugin-standard": "^4.0.0",
-    "grunt": "^1.0.4",
-    "grunt-bump": "^0.8.0",
-    "grunt-conventional-changelog": "^6.1.0",
-    "grunt-conventional-github-releaser": "^1.0.0",
-    "grunt-eslint": "^22.0.0",
-    "grunt-jasmine-nodejs": "^1.6.1",
-    "grunt-npm": "^0.0.2",
-    "jasmine-node": "^3.0.0",
-    "load-grunt-tasks": "^5.0.0"
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.10.0",
+    "eslint-config-prettier": "^10.1.8",
+    "fast-xml-parser": "^5.11.1",
+    "globals": "^17.12.0",
+    "jasmine": "^7.0.0",
+    "prettier": "^3.9.6"
   }
 }
