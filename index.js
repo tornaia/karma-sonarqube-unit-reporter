@@ -29,12 +29,17 @@ const SonarQubeUnitReporter = function (baseReporterDecorator, config, logger, f
   const prependTestFileName = reporterConfig.prependTestFileName || ''
   const testPaths = [].concat(reporterConfig.testPaths || reporterConfig.testPath || './')
   const testFilePattern = reporterConfig.testFilePattern || /(\.spec\.ts|\.spec.js)/
-  const filesForDescriptions = overrideTestDescription
-    ? fileUtil.getFilesForDescriptions(resolveTestPaths(testPaths), testFilePattern, {
-        log,
-        describeFunctions: reporterConfig.describeFunctions,
-      })
-    : Object.create(null)
+  let filesForDescriptions = overrideTestDescription ? buildDescriptionMap() : Object.create(null)
+  // In watch mode test files appear after the map was built; it is rebuilt at
+  // most once per run, on the first describe that is not found.
+  let mapRefreshedThisRun = false
+
+  function buildDescriptionMap() {
+    return fileUtil.getFilesForDescriptions(resolveTestPaths(testPaths), testFilePattern, {
+      log,
+      describeFunctions: reporterConfig.describeFunctions,
+    })
+  }
 
   // testPaths are relative to the working directory, like the paths written
   // into the report. When an entry does not exist there but does exist
@@ -84,6 +89,7 @@ const SonarQubeUnitReporter = function (baseReporterDecorator, config, logger, f
   this.onRunStart = function (browsers) {
     reports = new Map()
     unmappedDescriptions = new Set()
+    mapRefreshedThisRun = false
     if (browsers && typeof browsers.forEach === 'function') {
       browsers.forEach(getReport)
     }
@@ -173,7 +179,13 @@ const SonarQubeUnitReporter = function (baseReporterDecorator, config, logger, f
   // path is kept so the rest of the report is still usable.
   function mappedFilePath(preMapped, result) {
     const key = topLevelSuite(result).replace(/\\/g, '/')
-    const file = filesForDescriptions[key]
+    let file = filesForDescriptions[key]
+    if (!file && !mapRefreshedThisRun) {
+      mapRefreshedThisRun = true
+      log.debug('describe "%s" is not in the test file map, scanning %s again', key, JSON.stringify(testPaths))
+      filesForDescriptions = buildDescriptionMap()
+      file = filesForDescriptions[key]
+    }
     if (!file) {
       if (!unmappedDescriptions.has(key)) {
         unmappedDescriptions.add(key)

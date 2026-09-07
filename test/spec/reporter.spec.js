@@ -373,6 +373,40 @@ describe('sonarqubeUnit reporter', function () {
       }
     })
 
+    it('picks up test files added after start by rescanning at most once per run (watch mode)', async function () {
+      const fs = require('fs')
+      const os = require('os')
+      const fileUtil = require('../../src/file-util.js')
+      const sources = fs.mkdtempSync(path.join(os.tmpdir(), 'ksur-watch-'))
+      fs.writeFileSync(path.join(sources, 'a.spec.js'), "describe('A', fn)")
+      spyOn(fileUtil, 'getFilesForDescriptions').and.callThrough()
+      try {
+        const h = createHarness({
+          useBrowserName: false,
+          overrideTestDescription: true,
+          testPaths: [sources],
+          testFilePattern: '.spec.js',
+        })
+        const browser = h.browser()
+        expect(fileUtil.getFilesForDescriptions).toHaveBeenCalledTimes(1)
+
+        h.runSpecs(browser, [h.spec(['A'], 'one')])
+        expect(fileUtil.getFilesForDescriptions).toHaveBeenCalledTimes(1)
+
+        fs.writeFileSync(path.join(sources, 'b.spec.js'), "describe('B', fn)")
+        h.runSpecs(browser, [h.spec(['B'], 'new file'), h.spec(['C'], 'still unknown'), h.spec(['D'], 'unknown too')])
+        expect(fileUtil.getFilesForDescriptions).toHaveBeenCalledTimes(2)
+
+        const files = await h.finish()
+        const expectedPath = path.join(sources, 'b.spec.js').replace(/\\/g, '/')
+        expect(files['ut_report.xml']).toContain('<file path="' + expectedPath + '">')
+        expect(files['ut_report.xml']).toContain('<file path="C">')
+        expect(h.logsAt('warn').length).toBe(2)
+      } finally {
+        fs.rmSync(sources, { recursive: true, force: true })
+      }
+    })
+
     it('accepts a single string for testPaths', async function () {
       const h = createHarness({
         useBrowserName: false,
