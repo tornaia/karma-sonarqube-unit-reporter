@@ -53,7 +53,22 @@ const config = {
   sonarQubeUnitReporter: { useBrowserName: false, outputFile: 'reports/ut_report.xml' },
 }
 
-const reporter = new Reporter(baseReporterDecorator, config, logger, helper, formatError)
+// Resolve the constructor arguments the way Karma's DI does, from $inject.
+const services = {
+  baseReporterDecorator: baseReporterDecorator,
+  config: config,
+  logger: logger,
+  helper: helper,
+  formatError: formatError,
+}
+const reporter = new (Function.prototype.bind.apply(
+  Reporter,
+  [null].concat(
+    Reporter.$inject.map(function (name) {
+      return services[name]
+    })
+  )
+))()
 const browser = { id: 'smoke-1', name: 'Chrome Headless 120.0.0.0 (Linux x86_64)', lastResult: {} }
 const spec = function (suite, description, extra) {
   return Object.assign(

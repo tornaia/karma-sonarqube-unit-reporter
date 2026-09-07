@@ -53,7 +53,9 @@ function createHarness(reporterConfig, options) {
     sonarQubeUnitReporter: reporterConfig,
   }
   const logger = fakeLogger()
-  const reporter = new Reporter(baseReporterDecorator, config, logger, helper, formatError)
+  // Resolve the constructor arguments the way Karma's DI does, from $inject.
+  const services = { baseReporterDecorator, config, logger, helper, formatError }
+  const reporter = new Reporter(...Reporter.$inject.map((name) => services[name]))
 
   let counter = 0
   return {

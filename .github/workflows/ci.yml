@@ -26,6 +26,7 @@ jobs:
   legacy-smoke:
     # The published package must still load and work on the oldest
     # supported Node (engines.node), where the dev toolchain cannot run.
+    # The package has no runtime dependencies, so nothing is installed.
     name: Node ${{ matrix.node }} smoke
     runs-on: ubuntu-latest
     strategy:
@@ -37,5 +38,4 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: ${{ matrix.node }}
-      - run: npm install --production --legacy-peer-deps --ignore-scripts --no-audit --no-fund
       - run: node test/smoke.js

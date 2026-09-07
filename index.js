@@ -1,241 +1,201 @@
-var path = require('path')
-var fs = require('fs')
-var builder = require('xmlbuilder')
-var fileUtil = require('./src/file-util.js')
+'use strict'
 
-var SonarQubeUnitReporter = function (baseReporterDecorator, config, logger, helper, formatError) {
-  var log = logger.create('reporter.sonarqubeUnit')
-  var reporterConfig = config.sonarQubeUnitReporter || {}
-  var sonarQubeVersion = reporterConfig.sonarQubeVersion || 'LATEST'
-  var pkgName = reporterConfig.suite || ''
-  var outputDir = reporterConfig.outputDir
-  var outputFile = reporterConfig.outputFile
-  var useBrowserName = reporterConfig.useBrowserName
+const path = require('path')
+const fs = require('fs')
+const fileUtil = require('./src/file-util.js')
+const xml = require('./src/xml-writer.js')
 
-  var filenameFormatter = reporterConfig.filenameFormatter || null
-  var testnameFormatter = reporterConfig.testnameFormatter || null
+const SonarQubeUnitReporter = function (baseReporterDecorator, config, logger, formatError) {
+  const log = logger.create('reporter.sonarqubeUnit')
+  const reporterConfig = config.sonarQubeUnitReporter || {}
 
-  var suites
-  var pendingFileWritings = 0
-  var fileWritingFinished = function () {}
-  var allMessages = []
+  // SonarQube < 6.2 used the unitTest root element, everything since uses testExecutions.
+  const rootElementName = reporterConfig.sonarQubeVersion === '5.x' ? 'unitTest' : 'testExecutions'
+  const suitePrefix = reporterConfig.suite || ''
+  const outputFile = reporterConfig.outputFile
+  const useBrowserName = reporterConfig.useBrowserName === undefined ? true : !!reporterConfig.useBrowserName
+  const outputDir = path.resolve(
+    config.basePath || process.cwd(),
+    reporterConfig.outputDir == null ? '.' : String(reporterConfig.outputDir)
+  )
 
-  if (outputDir == null) {
-    outputDir = '.'
-  }
+  const userFilenameFormatter =
+    typeof reporterConfig.filenameFormatter === 'function' ? reporterConfig.filenameFormatter : null
+  const testnameFormatter =
+    typeof reporterConfig.testnameFormatter === 'function' ? reporterConfig.testnameFormatter : null
 
-  outputDir = helper.normalizeWinPath(path.resolve(config.basePath, outputDir)) + path.sep
+  // Optional mapping of describe names to the test files that contain them.
+  const overrideTestDescription = !!reporterConfig.overrideTestDescription
+  const prependTestFileName = reporterConfig.prependTestFileName || ''
+  const testPaths = reporterConfig.testPaths || [reporterConfig.testPath || './']
+  const testFilePattern = reporterConfig.testFilePattern || /(\.spec\.ts|\.spec.js)/
+  const filesForDescriptions = overrideTestDescription
+    ? fileUtil.getFilesForDescriptions(testPaths, testFilePattern, {
+        log,
+        describeFunctions: reporterConfig.describeFunctions,
+      })
+    : Object.create(null)
 
-  if (typeof useBrowserName === 'undefined') {
-    useBrowserName = true
+  const filenameFormatter = overrideTestDescription ? defaultFilenameFormatter : userFilenameFormatter
+
+  function defaultFilenameFormatter(nextPath) {
+    const file = filesForDescriptions[nextPath]
+    return prependTestFileName !== '' ? prependTestFileName + '/' + file : file
   }
 
   baseReporterDecorator(this)
 
-  this.adapters = [
-    function (msg) {
-      allMessages.push(msg)
-    },
-  ]
+  // This reporter only writes files; nothing goes to the terminal.
+  this.adapters = []
 
-  var initliazeXmlForBrowser = function (browser) {
-    var tagName
-    switch (sonarQubeVersion) {
-      case '5.x':
-        tagName = 'unitTest'
-        break
-      default:
-        tagName = 'testExecutions'
+  // browser.id -> { browser, files: [{ path, testCases: [{ name, duration, skipped, failure }] }] }
+  let reports = new Map()
+
+  function getReport(browser) {
+    let report = reports.get(browser.id)
+    if (!report) {
+      report = { browser, files: [] }
+      reports.set(browser.id, report)
     }
-
-    var parentTag = (suites[browser.id] = builder.create(
-      tagName,
-      { version: '1.0', encoding: 'UTF-8', standalone: true },
-      { pubID: null, sysID: null },
-      {
-        allowSurrogateChars: false,
-        skipNullAttributes: false,
-        headless: true,
-        ignoreDecorators: false,
-        separateArrayItems: false,
-        noDoubleEncoding: false,
-        stringify: {},
-      }
-    ))
-
-    parentTag.att('version', '1')
-  }
-
-  var writeXmlForBrowser = function (browser) {
-    var safeBrowserName = browser.name.replace(/ /g, '_')
-    var newOutputFile
-
-    if (outputFile != null) {
-      var dir = useBrowserName ? path.join(outputDir, safeBrowserName) : outputDir
-      newOutputFile = path.join(dir, outputFile)
-    } else if (useBrowserName) {
-      newOutputFile = path.join(outputDir, 'ut_report-' + safeBrowserName + '.xml')
-    } else {
-      newOutputFile = path.join(outputDir, 'ut_report.xml')
-    }
-
-    var xmlToOutput = suites[browser.id]
-    if (!xmlToOutput) {
-      return // don't die if browser didn't start
-    }
-
-    pendingFileWritings++
-    helper.mkdirIfNotExists(path.dirname(newOutputFile), function () {
-      fs.writeFile(newOutputFile, xmlToOutput.end({ pretty: true }), function (err) {
-        if (err) {
-          log.warn('Cannot write JUnit xml\n\t' + err.message)
-        } else {
-          log.debug('JUnit results written to "%s".', newOutputFile)
-        }
-
-        if (!--pendingFileWritings) {
-          fileWritingFinished()
-        }
-      })
-    })
-  }
-
-  var getClassName = function (browser, result) {
-    var browserName = browser.name.replace(/ /g, '_').replace(/\./g, '_') + '.'
-
-    return (useBrowserName ? browserName : '') + (pkgName ? pkgName + '/' : '') + result.suite[0]
+    return report
   }
 
   this.onRunStart = function (browsers) {
-    suites = Object.create(null)
-
-    // TODO(vojta): remove once we don't care about Karma 0.10
-    browsers.forEach(initliazeXmlForBrowser)
+    reports = new Map()
+    if (browsers && typeof browsers.forEach === 'function') {
+      browsers.forEach(getReport)
+    }
   }
 
   this.onBrowserStart = function (browser) {
-    initliazeXmlForBrowser(browser)
+    getReport(browser)
+  }
+
+  this.onSpecComplete = function (browser, result) {
+    const report = getReport(browser)
+    const filePath = resolveFilePath(browser, result)
+
+    const lastFile = report.files[report.files.length - 1]
+    let file = lastFile && lastFile.path === filePath ? lastFile : null
+    if (!file) {
+      file = { path: filePath, testCases: [] }
+      report.files.push(file)
+    }
+
+    const testCase = {
+      name: resolveTestName(result),
+      duration: result.time || 1,
+      skipped: !!result.skipped,
+      failure: null,
+    }
+    if (!result.success) {
+      testCase.failure = { message: 'Error', text: formatError((result.log || []).join('\n\n')) }
+    }
+    file.testCases.push(testCase)
   }
 
   this.onBrowserComplete = function (browser) {
-    var suite = suites[browser.id]
-    var result = browser.lastResult
-    if (!suite || !result) {
-      return // don't die if browser didn't start
+    const report = reports.get(browser.id)
+    if (report) {
+      writeReport(report)
     }
-
-    writeXmlForBrowser(browser)
   }
 
   this.onRunComplete = function () {
-    suites = null
-    allMessages.length = 0
+    reports = new Map()
   }
 
-  this.specSuccess =
-    this.specSkipped =
-    this.specFailure =
-      function (browser, result) {
-        var preMapped = getClassName(browser, result).replace(/\\/g, '/')
-        var nextPath = preMapped
-        if (filenameFormatter !== null) {
-          nextPath = filenameFormatter(nextPath, result)
-          if (!nextPath) {
-            log.warn('No filename found for description: ' + nextPath)
-          } else if (preMapped !== nextPath) {
-            log.debug('Transformed File name "' + preMapped + '" -> "' + nextPath + '"')
-          } else {
-            log.debug('Name not transformed for File "' + preMapped + '"')
+  // The path attribute before any mapping: [browser.][suite/]top-level describe
+  function describedPath(browser, result) {
+    const browserName = safeName(browser).replace(/\./g, '_') + '.'
+    const described = (useBrowserName ? browserName : '') + (suitePrefix ? suitePrefix + '/' : '') + result.suite[0]
+    return described.replace(/\\/g, '/')
+  }
+
+  function resolveFilePath(browser, result) {
+    const preMapped = describedPath(browser, result)
+    let nextPath = preMapped
+    if (filenameFormatter) {
+      nextPath = filenameFormatter(preMapped, result)
+      if (!nextPath) {
+        log.warn('No filename found for description: ' + preMapped)
+      } else if (preMapped !== nextPath) {
+        log.debug('Transformed File name "' + preMapped + '" -> "' + nextPath + '"')
+      } else {
+        log.debug('Name not transformed for File "' + preMapped + '"')
+      }
+    }
+    return nextPath
+  }
+
+  function resolveTestName(result) {
+    let testname = result.description
+    for (let i = result.suite.length - 1; i >= 0; i--) {
+      testname = result.suite[i] + ' ' + testname
+    }
+    if (!testnameFormatter) {
+      return testname
+    }
+    const formatted = testnameFormatter(testname, result)
+    if (formatted && formatted !== testname) {
+      log.debug('Transformed test name "' + testname + '" -> "' + formatted + '"')
+      return formatted
+    }
+    log.debug('Name not transformed for test "' + testname + '"')
+    return testname
+  }
+
+  function safeName(browser) {
+    return String(browser.name || browser.id || 'browser').replace(/ /g, '_')
+  }
+
+  function outputFileFor(browser) {
+    const safeBrowserName = safeName(browser)
+    if (outputFile != null) {
+      const dir = useBrowserName ? path.join(outputDir, safeBrowserName) : outputDir
+      return path.join(dir, outputFile)
+    }
+    return path.join(outputDir, useBrowserName ? 'ut_report-' + safeBrowserName + '.xml' : 'ut_report.xml')
+  }
+
+  function toElement(report) {
+    return {
+      name: rootElementName,
+      attributes: { version: '1' },
+      children: report.files.map((file) => ({
+        name: 'file',
+        attributes: { path: file.path },
+        children: file.testCases.map((testCase) => {
+          const children = []
+          if (testCase.skipped) {
+            children.push({ name: 'skipped', attributes: { message: 'Skipped' } })
           }
-        }
-
-        var fileNodes = suites[browser.id]
-        var lastFilePath
-
-        var numberOfFileNodes = fileNodes.children.length
-        if (numberOfFileNodes > 0) {
-          lastFilePath = fileNodes.children[numberOfFileNodes - 1].attributes.getNamedItem('path').value
-          if (lastFilePath !== nextPath) {
-            suites[browser.id].ele('file', {
-              path: nextPath,
+          if (testCase.failure) {
+            children.push({
+              name: 'failure',
+              attributes: { message: testCase.failure.message },
+              text: testCase.failure.text,
             })
           }
-        } else {
-          suites[browser.id].ele('file', {
-            path: nextPath,
-          })
-        }
-
-        var appendToThisNode = suites[browser.id].children[suites[browser.id].children.length - 1]
-
-        function getDescription(result) {
-          var desc = result.description
-          for (var i = result.suite.length - 1; i >= 0; i--) {
-            desc = result.suite[i] + ' ' + desc
-          }
-          return desc
-        }
-
-        var testname = getDescription(result)
-        var testnameFormatted = testname
-
-        if (testnameFormatter !== null) {
-          testnameFormatted = testnameFormatter(testname, result)
-          if (testnameFormatted && testnameFormatted !== testname) {
-            log.debug('Transformed test name "' + testname + '" -> "' + testnameFormatted + '"')
-          } else {
-            testnameFormatted = testname
-            log.debug('Name not transformed for test "' + testnameFormatted + '"')
-          }
-        }
-        var testCase = appendToThisNode.ele('testCase', {
-          name: testnameFormatted,
-          duration: result.time || 1,
-        })
-
-        if (result.skipped) {
-          testCase.ele('skipped', { message: 'Skipped' })
-        }
-
-        if (!result.success) {
-          testCase.ele('failure', { message: 'Error' }, formatError(result.log.join('\n\n')))
-        }
-      }
-
-  // wait for writing all the xml files, before exiting
-  this.onExit = function (done) {
-    if (pendingFileWritings) {
-      fileWritingFinished = done
-    } else {
-      done()
+          return { name: 'testCase', attributes: { name: testCase.name, duration: testCase.duration }, children }
+        }),
+      })),
     }
   }
 
-  // look for jasmine test files in the specified path
-  var overrideTestDescription = reporterConfig.overrideTestDescription || false
-  var testPath = reporterConfig.testPath || './'
-  var testPaths = reporterConfig.testPaths || [testPath]
-  var testFilePattern = reporterConfig.testFilePattern || /(\.spec\.ts|\.spec.js)/
-  var prependTestFileName = reporterConfig.prependTestFileName || ''
-  var filesForDescriptions = fileUtil.getFilesForDescriptions(testPaths, testFilePattern, {
-    log: log,
-    describeFunctions: reporterConfig.describeFunctions,
-  })
-
-  function defaultFilenameFormatter(nextPath) {
-    if (prependTestFileName !== '') {
-      return prependTestFileName + '/' + filesForDescriptions[nextPath]
-    } else {
-      return filesForDescriptions[nextPath]
+  function writeReport(report) {
+    const file = outputFileFor(report.browser)
+    try {
+      fs.mkdirSync(path.dirname(file), { recursive: true })
+      fs.writeFileSync(file, xml.serialize(toElement(report)))
+      log.debug('SonarQube test execution report written to "%s".', file)
+    } catch (err) {
+      log.warn('Cannot write SonarQube test execution report "%s": %s', file, err.message)
     }
-  }
-
-  if (overrideTestDescription) {
-    filenameFormatter = defaultFilenameFormatter
   }
 }
 
-SonarQubeUnitReporter.$inject = ['baseReporterDecorator', 'config', 'logger', 'helper', 'formatError']
+SonarQubeUnitReporter.$inject = ['baseReporterDecorator', 'config', 'logger', 'formatError']
 
 // PUBLISH DI MODULE
 module.exports = {

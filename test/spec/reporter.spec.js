@@ -8,7 +8,7 @@ describe('sonarqubeUnit reporter', function () {
     const plugin = require('../../index.js')
     const entry = plugin['reporter:sonarqubeUnit']
     expect(entry[0]).toBe('type')
-    expect(entry[1].$inject).toEqual(['baseReporterDecorator', 'config', 'logger', 'helper', 'formatError'])
+    expect(entry[1].$inject).toEqual(['baseReporterDecorator', 'config', 'logger', 'formatError'])
   })
 
   it('writes one report per browser named after the browser by default', async function () {
@@ -199,6 +199,64 @@ describe('sonarqubeUnit reporter', function () {
     if (h.reporter.onBrowserComplete) h.reporter.onBrowserComplete(browser)
     h.reporter.onRunComplete([browser], {})
     expect(await h.finish()).toEqual({})
+  })
+
+  describe('robustness against unexpected event sequences', function () {
+    it('reports specs of a browser that never sent browser_start (#72, #53)', async function () {
+      const h = createHarness({ useBrowserName: false })
+      const browser = h.browser()
+      h.reporter.onRunStart([])
+      expect(() => h.reporter.onSpecComplete(browser, h.spec(['A'], 'one'))).not.toThrow()
+      if (h.reporter.onBrowserComplete) h.reporter.onBrowserComplete(browser)
+      h.reporter.onRunComplete([browser], {})
+      const files = await h.finish()
+      expect(files['ut_report.xml']).toContain('<testCase name="A one" duration="12"/>')
+    })
+
+    it('ignores a spec that arrives after run_complete without crashing (#28)', async function () {
+      const h = createHarness({ useBrowserName: false })
+      const browser = h.browser()
+      h.runSpecs(browser, [h.spec(['A'], 'one')])
+      expect(() => h.reporter.onSpecComplete(browser, h.spec(['A'], 'late'))).not.toThrow()
+      expect(() => h.reporter.onBrowserStart(browser)).not.toThrow()
+      const files = await h.finish()
+      expect(files['ut_report.xml']).toContain('A one')
+      expect(files['ut_report.xml']).not.toContain('A late')
+    })
+
+    it('starts a fresh report for every run (watch mode)', async function () {
+      const h = createHarness({ useBrowserName: false })
+      const browser = h.browser()
+      h.runSpecs(browser, [h.spec(['A'], 'first run')])
+      h.runSpecs(browser, [h.spec(['A'], 'second run')])
+      const files = await h.finish()
+      expect(files['ut_report.xml']).toContain('A second run')
+      expect(files['ut_report.xml']).not.toContain('A first run')
+    })
+
+    it('strips ANSI color codes from failure output instead of crashing (#51)', async function () {
+      const h = createHarness({ useBrowserName: false })
+      const ESC = '\x1b'
+      h.runSpecs(h.browser(), [
+        h.spec(['A'], 'colored', {
+          success: false,
+          log: ['Expected ' + ESC + '[31mfalse' + ESC + '[39m to be ' + ESC + '[32mtruthy' + ESC + '[39m.'],
+        }),
+      ])
+      const files = await h.finish()
+      expect(files['ut_report.xml']).toContain('>Expected false to be truthy.\n</failure>')
+      expect(files['ut_report.xml']).not.toContain(ESC)
+    })
+
+    it('logs a warning instead of throwing when the report cannot be written', async function () {
+      const h = createHarness({ useBrowserName: false, outputFile: 'blocked/ut_report.xml' })
+      const fs = require('fs')
+      fs.writeFileSync(path.join(h.dir, 'blocked'), 'a file where the directory should be')
+      expect(() => h.runSpecs(h.browser(), [h.spec(['A'], 'one')])).not.toThrow()
+      await h.finish()
+      expect(h.logsAt('warn').length).toBe(1)
+      expect(h.logsAt('warn')[0].join(' ')).toContain('Cannot write')
+    })
   })
 
   // Behaviour documented as-is; later commits change these on purpose.

@@ -34,9 +34,6 @@
   ],
   "author": "Andras Tornai <tornai.andras.ede@gmail.com>",
   "license": "MIT",
-  "dependencies": {
-    "xmlbuilder": "^13.0.2"
-  },
   "peerDependencies": {
     "karma": ">=0.9"
   },
