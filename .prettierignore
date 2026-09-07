@@ -3,3 +3,4 @@ coverage/
 reports/
 package-lock.json
 test/resources/
+test/integration/fixtures/

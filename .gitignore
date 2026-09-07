@@ -8,3 +8,4 @@ reports/
 coverage/
 .DS_Store
 Thumbs.db
+test/integration/output/

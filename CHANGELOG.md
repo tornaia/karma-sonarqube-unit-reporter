@@ -7,6 +7,11 @@ pull requests that were merged for each release.
 
 ## [Unreleased]
 
+### Added
+
+- Integration test that runs the fixtures through a real Karma 6 server with karma-jasmine and headless Chrome
+  (`npm run test:integration`), executed in CI on Linux and Windows.
+
 ## [1.0.0] - 2026-09-07
 
 The first stable release. Existing configurations keep working; see "Upgrading" below for the few visible

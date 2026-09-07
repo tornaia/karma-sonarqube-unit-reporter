@@ -139,8 +139,9 @@ test name was transformed and where the report was written.
 
 ```sh
 npm install
-npm test          # eslint + prettier check + jasmine
-node test/smoke.js  # dependency-free check of the reporter, also run on old Node versions in CI
+npm test                  # eslint + prettier check + jasmine unit tests
+npm run test:integration  # a real Karma 6 run with karma-jasmine and headless Chrome
+node test/smoke.js        # dependency-free check of the reporter, also run on old Node versions in CI
 ```
 
 See [CHANGELOG.md](CHANGELOG.md) for the release history.
