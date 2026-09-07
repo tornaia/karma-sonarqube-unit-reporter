@@ -77,14 +77,19 @@ const SonarQubeUnitReporter = function (baseReporterDecorator, config, logger, f
       report.files.set(filePath, file)
     }
 
+    const log = Array.isArray(result.log) ? result.log : []
     const testCase = {
       name: resolveTestName(result),
-      duration: result.time || 1,
+      // the schema wants a positive integer number of milliseconds
+      duration: Math.max(1, Math.round(Number(result.time) || 0)),
       skipped: !!result.skipped,
       failure: null,
     }
     if (!result.success) {
-      testCase.failure = { message: 'Error', text: formatError((result.log || []).join('\n\n')) }
+      testCase.failure = {
+        message: failureMessage(log),
+        text: log.length ? formatError(log.join('\n\n')) : '',
+      }
     }
     file.testCases.push(testCase)
   }
@@ -97,10 +102,35 @@ const SonarQubeUnitReporter = function (baseReporterDecorator, config, logger, f
     reports = new Map()
   }
 
+  // The first line of the failure log is the assertion message; the rest is
+  // the stack trace, which goes into the element text.
+  function failureMessage(log) {
+    for (const entry of log) {
+      const line = String(entry)
+        .split(/\r?\n/)
+        .find((l) => l.trim() !== '')
+      if (line) {
+        return line.trim()
+      }
+    }
+    return 'Error'
+  }
+
+  function suitesOf(result) {
+    return Array.isArray(result.suite) ? result.suite : []
+  }
+
+  // The top-level describe; a spec outside any describe falls back to its own name.
+  function topLevelSuite(result) {
+    const suites = suitesOf(result)
+    return String(suites.length ? suites[0] : result.description || '')
+  }
+
   // The path attribute before any mapping: [browser.][suite/]top-level describe
   function describedPath(browser, result) {
     const browserName = safeName(browser).replace(/\./g, '_') + '.'
-    const described = (useBrowserName ? browserName : '') + (suitePrefix ? suitePrefix + '/' : '') + result.suite[0]
+    const described =
+      (useBrowserName ? browserName : '') + (suitePrefix ? suitePrefix + '/' : '') + topLevelSuite(result)
     return described.replace(/\\/g, '/')
   }
 
@@ -116,7 +146,7 @@ const SonarQubeUnitReporter = function (baseReporterDecorator, config, logger, f
   // prefix) selects the test file; when it is unknown the description-based
   // path is kept so the rest of the report is still usable.
   function mappedFilePath(preMapped, result) {
-    const key = String(result.suite[0]).replace(/\\/g, '/')
+    const key = topLevelSuite(result).replace(/\\/g, '/')
     const file = filesForDescriptions[key]
     if (!file) {
       if (!unmappedDescriptions.has(key)) {
@@ -162,9 +192,10 @@ const SonarQubeUnitReporter = function (baseReporterDecorator, config, logger, f
   }
 
   function resolveTestName(result) {
-    let testname = result.description
-    for (let i = result.suite.length - 1; i >= 0; i--) {
-      testname = result.suite[i] + ' ' + testname
+    const suites = suitesOf(result)
+    let testname = String(result.description || '')
+    for (let i = suites.length - 1; i >= 0; i--) {
+      testname = suites[i] + ' ' + testname
     }
     if (!testnameFormatter) {
       return testname

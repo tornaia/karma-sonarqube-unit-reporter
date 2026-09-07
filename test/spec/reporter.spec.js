@@ -34,7 +34,7 @@ describe('sonarqubeUnit reporter', function () {
         '  <file path="Chrome_Headless_120_0_0_0_(Windows_10).AppComponent">',
         '    <testCase name="AppComponent should create" duration="17"/>',
         '    <testCase name="AppComponent should fail &lt;b> &amp; &quot;q&quot;" duration="1">',
-        '      <failure message="Error">Expected true to be false.',
+        '      <failure message="Expected true to be false.">Expected true to be false.',
         '    at UserContext.&lt;anonymous&gt; (src/app/app.component.spec.ts:10:20)',
         '',
         'second log &amp; more',
@@ -507,13 +507,67 @@ describe('sonarqubeUnit reporter', function () {
     })
   })
 
-  // Behaviour documented as-is; later commits change these on purpose.
-  describe('current output details', function () {
-    it('passes a fractional duration through unchanged', async function () {
+  describe('test case details', function () {
+    it('rounds the duration to a positive integer as the schema requires', async function () {
       const h = createHarness({ useBrowserName: false })
-      h.runSpecs(h.browser(), [h.spec(['A'], 'one', { time: 3.7 })])
+      h.runSpecs(h.browser(), [
+        h.spec(['A'], 'fraction', { time: 3.7 }),
+        h.spec(['A'], 'tiny', { time: 0.2 }),
+        h.spec(['A'], 'zero', { time: 0 }),
+        h.spec(['A'], 'missing', { time: undefined }),
+        h.spec(['A'], 'string', { time: '15' }),
+        h.spec(['A'], 'garbage', { time: 'soon' }),
+      ])
       const files = await h.finish()
-      expect(files['ut_report.xml']).toContain('duration="3.7"')
+      expect(files['ut_report.xml']).toContain('<testCase name="A fraction" duration="4"/>')
+      expect(files['ut_report.xml']).toContain('<testCase name="A tiny" duration="1"/>')
+      expect(files['ut_report.xml']).toContain('<testCase name="A zero" duration="1"/>')
+      expect(files['ut_report.xml']).toContain('<testCase name="A missing" duration="1"/>')
+      expect(files['ut_report.xml']).toContain('<testCase name="A string" duration="15"/>')
+      expect(files['ut_report.xml']).toContain('<testCase name="A garbage" duration="1"/>')
+    })
+
+    it('uses the first line of the failure log as the failure message', async function () {
+      const h = createHarness({ useBrowserName: false })
+      h.runSpecs(h.browser(), [
+        h.spec(['A'], 'fails', {
+          success: false,
+          log: ['\n  Expected true to be false.\n    at UserContext.<anonymous> (app.spec.ts:10:20)', 'more'],
+        }),
+        h.spec(['A'], 'fails silently', { success: false, log: [] }),
+        h.spec(['A'], 'fails without log', { success: false, log: undefined }),
+      ])
+      const files = await h.finish()
+      expect(files['ut_report.xml']).toContain(
+        xml([
+          '    <testCase name="A fails" duration="12">',
+          '      <failure message="Expected true to be false.">',
+          '  Expected true to be false.',
+          '    at UserContext.&lt;anonymous&gt; (app.spec.ts:10:20)',
+          '',
+          'more',
+          '</failure>',
+        ])
+      )
+      expect(files['ut_report.xml']).toContain(
+        xml(['    <testCase name="A fails silently" duration="12">', '      <failure message="Error"/>'])
+      )
+      expect(files['ut_report.xml']).toContain(
+        xml(['    <testCase name="A fails without log" duration="12">', '      <failure message="Error"/>'])
+      )
+    })
+
+    it('reports a spec that has no describe around it under its own name', async function () {
+      const h = createHarness({ useBrowserName: false })
+      h.runSpecs(h.browser(), [
+        h.spec([], 'top level spec'),
+        h.spec(undefined, 'spec without suite', { log: undefined }),
+      ])
+      const files = await h.finish()
+      expect(files['ut_report.xml']).toContain('<file path="top level spec">')
+      expect(files['ut_report.xml']).toContain('<testCase name="top level spec" duration="12"/>')
+      expect(files['ut_report.xml']).toContain('<file path="spec without suite">')
+      expect(files['ut_report.xml']).toContain('<testCase name="spec without suite" duration="12"/>')
     })
   })
 })
