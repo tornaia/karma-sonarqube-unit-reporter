@@ -39,7 +39,8 @@ module.exports = {
  * the file that contains it.
  *
  * @param {string|string[]} startPaths directories (or single files) to scan
- * @param {RegExp|string} filter which files count as test files, see findFilesInDir
+ * @param {RegExp|string|Array<RegExp|string>} filter which files count as test
+ *   files, see findFilesInDir
  * @param {{log?: object, describeFunctions?: string[]}} [options] `log` is a
  *   Karma logger (debug/info/warn/error); `describeFunctions` overrides the
  *   suite functions to look for
@@ -168,17 +169,21 @@ function unescapeStringLiteral(body) {
  * instead of an error.
  *
  * @param {string} startPath directory to scan (a single file is accepted too)
- * @param {RegExp|string} filter a RegExp tested against the path, or a string
- *   pattern: `.spec.js` matches by suffix, `*` matches within one path segment,
- *   `**` matches across segments, `/` matches either path separator
+ * @param {RegExp|string|Array<RegExp|string>} filter a RegExp tested against
+ *   the path, or a string pattern: `.spec.js` matches by suffix, `*` matches
+ *   within one path segment, `**` matches across segments, `/` matches either
+ *   path separator. An array matches when any of its entries does.
  * @param {object} [log] Karma logger
  * @returns {string[]} matching file paths, joined from `startPath`
  */
 function findFilesInDir(startPath, filter, log) {
   log = log || consoleLogger
-  const regex = filter instanceof RegExp ? filter : patternToRegExp(filter)
+  const matchers = toMatchers(filter)
   const matches = function (file) {
-    return regex.test(file) || regex.test(file.replace(/\\/g, '/'))
+    const withSlashes = file.replace(/\\/g, '/')
+    return matchers.some(function (regex) {
+      return regex.test(file) || regex.test(withSlashes)
+    })
   }
 
   let startStat
@@ -221,6 +226,21 @@ function findFilesInDir(startPath, filter, log) {
       }
     })
   }
+}
+
+// Accepts a RegExp, a string pattern or an array of those; a file matches when
+// any of the matchers does. Regular expressions are tested with the native
+// path and with forward slashes, so a pattern written for one platform works
+// on the other.
+function toMatchers(filter) {
+  const list = Array.isArray(filter) ? filter : [filter]
+  return list.map(function (item) {
+    if (item instanceof RegExp) return item
+    if (typeof item === 'string') return patternToRegExp(item)
+    throw new TypeError(
+      'testFilePattern must be a RegExp, a string pattern or an array of those, got: ' + JSON.stringify(item)
+    )
+  })
 }
 
 function patternToRegExp(pattern) {
